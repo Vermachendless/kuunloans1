@@ -1,0 +1,6 @@
+{
+  "name": "SilverKuun Loans",
+  "description": "Modern financial solutions, low-interest personal & business loans, IPPIS loans, collateral financing, and financial aid by SilverKuun Cooperative Multipurpose Society.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
