@@ -8,7 +8,7 @@ export const COMPANY_INFO = {
   establishedYear: '2014',
   yearsOfExcellence: '10+',
   totalDisbursed: '₦2.5B+',
-  satisfiedMembers: '15,000+',
+  satisfiedMembers: 'Thousands+',
   ippisMaxLimit: '₦5,000,000',
   phones: [
     '+234 701 529 2816',

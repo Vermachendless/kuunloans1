@@ -119,10 +119,10 @@ export const Hero: React.FC<HeroProps> = ({ onOpenApplicationModal, onExploreLoa
               </div>
               <div>
                 <p className="text-2xl sm:text-3xl font-black text-white font-heading">
-                  15k+
+                  Thousands
                 </p>
                 <p className="text-xs sm:text-sm text-zinc-400 mt-0.5 font-medium">
-                  Satisfied Nigerian Members
+                  of Satisfied Nigerians
                 </p>
               </div>
             </div>
