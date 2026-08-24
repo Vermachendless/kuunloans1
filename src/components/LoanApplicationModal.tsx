@@ -49,6 +49,17 @@ export const LoanApplicationModal: React.FC<LoanApplicationModalProps> = ({
 
   const [applicationRef, setApplicationRef] = useState<string>('');
 
+  // Lock background body scroll when modal is open
+  React.useEffect(() => {
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleNext = () => {
@@ -87,15 +98,15 @@ export const LoanApplicationModal: React.FC<LoanApplicationModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6">
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 md:p-6 overflow-hidden">
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl border border-zinc-200 overflow-hidden relative"
+        className="bg-white w-full max-w-2xl max-h-[calc(100dvh-24px)] sm:max-h-[calc(100dvh-40px)] md:max-h-[min(90vh,820px)] rounded-3xl shadow-2xl border border-zinc-200 flex flex-col overflow-hidden relative"
       >
-        {/* Modal Header */}
-        <div className="bg-black text-white p-6 sm:p-7 flex items-center justify-between border-b border-zinc-800">
+        {/* Modal Header (Non-scrolling / Sticky at top) */}
+        <div className="shrink-0 bg-black text-white p-5 sm:p-6 md:p-7 flex items-center justify-between border-b border-zinc-800">
           <div>
             <div className="flex items-center gap-2 text-yellow-400 text-xs font-black uppercase tracking-wider mb-1">
               <ShieldCheck className="w-4 h-4 text-yellow-400" />
@@ -115,9 +126,9 @@ export const LoanApplicationModal: React.FC<LoanApplicationModalProps> = ({
           </button>
         </div>
 
-        {/* Step Indicator (Steps 1 to 3) */}
+        {/* Step Indicator (Steps 1 to 3, Non-scrolling) */}
         {step < 4 && (
-          <div className="bg-zinc-50 px-6 sm:px-7 py-3 border-b border-zinc-200 flex items-center justify-between text-xs text-zinc-500">
+          <div className="shrink-0 bg-zinc-50 px-5 sm:px-7 py-3 border-b border-zinc-200 flex items-center justify-between text-xs text-zinc-500">
             <span className="font-bold text-black">
               Step {step} of 3:{' '}
               {step === 1 && 'Facility & Amount'}
@@ -137,8 +148,8 @@ export const LoanApplicationModal: React.FC<LoanApplicationModalProps> = ({
           </div>
         )}
 
-        {/* Modal Body */}
-        <div className="p-6 sm:p-8">
+        {/* Modal Body (Scrollable Form Content Area) */}
+        <div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-7 md:p-8 overscroll-contain">
           
           {/* STEP 1: Facility Selection & Amount */}
           {step === 1 && (
@@ -463,9 +474,9 @@ export const LoanApplicationModal: React.FC<LoanApplicationModalProps> = ({
 
         </div>
 
-        {/* Modal Footer Controls (Steps 1 to 3) */}
+        {/* Modal Footer Controls (Steps 1 to 3, Non-scrolling pinned at bottom) */}
         {step < 4 && (
-          <div className="bg-zinc-50 p-6 sm:p-7 border-t border-zinc-200 flex items-center justify-between">
+          <div className="shrink-0 bg-zinc-50 p-4 sm:p-5 md:p-6 border-t border-zinc-200 flex items-center justify-between">
             {step > 1 ? (
               <button
                 type="button"
