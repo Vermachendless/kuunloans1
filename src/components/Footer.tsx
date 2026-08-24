@@ -27,10 +27,8 @@ export const Footer: React.FC<FooterProps> = ({ onOpenApplicationModal }) => {
           {/* Col 1: Brand & Overview */}
           <div className="lg:col-span-4">
             <a href="#" className="flex items-center gap-3 mb-5 group">
-              <div className="w-10 h-10 rounded-xl bg-yellow-400 flex items-center justify-center shadow-md text-black border border-yellow-500">
-                <span className="font-black text-lg tracking-tight text-black font-heading">
-                  SK
-                </span>
+              <div className="w-10 h-10 rounded-xl overflow-hidden shadow-md bg-yellow-400 border border-yellow-500">
+                <img src="/logo.jpg" alt="SilverKuun Loans Logo" className="w-full h-full object-cover" />
               </div>
               <div className="flex flex-col">
                 <div className="flex items-center gap-1">

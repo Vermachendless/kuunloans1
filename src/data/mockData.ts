@@ -2,7 +2,7 @@ import { LoanProduct, FinancialAidCategory, FinancialSolution, Testimonial, Offi
 
 export const COMPANY_INFO = {
   name: 'SilverKuun Loans',
-  legalName: 'SilverKuun Cooperative Multipurpose Society Limited',
+  legalName: 'SilverKuun Cooperative Society Limited',
   groupName: 'SilverKuun Group',
   tagline: 'Reliable, Low-Interest Financial Solutions Tailored for Every Ambition',
   establishedYear: '2014',
@@ -19,7 +19,7 @@ export const COMPANY_INFO = {
     'info@silverkuunloans.com',
     'silverkuun@gmail.com'
   ],
-  workingHours: 'Monday – Friday: 8:00 AM – 5:00 PM',
+  workingHours: 'Monday – Friday: 9:00 AM – 4:30 PM',
   supportHours: '24/7 Dedicated Support Helpdesk'
 };
 

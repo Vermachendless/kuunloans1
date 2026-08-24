@@ -95,10 +95,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenApplicationModal, onOpenCa
           <div className="flex items-center justify-between">
             {/* Brand Logo */}
             <a href="#" className="flex items-center gap-3 group">
-              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-black flex items-center justify-center shadow-md text-white border-2 border-yellow-400 group-hover:scale-105 transition-transform duration-200">
-                <span className="font-black text-lg sm:text-xl tracking-tight text-white flex items-center font-heading">
-                  <span className="text-yellow-400">S</span>K
-                </span>
+              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl overflow-hidden shadow-md border-2 border-yellow-400 group-hover:scale-105 transition-transform duration-200 bg-yellow-400">
+                <img src="/logo.jpg" alt="SilverKuun Loans Logo" className="w-full h-full object-cover" />
               </div>
               <div className="flex flex-col">
                 <div className="flex items-center gap-1">
