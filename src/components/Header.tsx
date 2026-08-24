@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Phone, 
   Mail, 
@@ -6,9 +6,14 @@ import {
   X, 
   ShieldCheck, 
   ChevronRight, 
+  ChevronDown,
   Calculator,
   ArrowRight,
-  Clock
+  Clock,
+  HandHeart,
+  TrendingUp,
+  Sparkles,
+  Layers
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { COMPANY_INFO } from '../data/mockData';
@@ -21,6 +26,11 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ onOpenApplicationModal, onOpenCalculator }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isServicesDropdownOpen, setIsServicesDropdownOpen] = useState(false);
+  const [isMobileServicesOpen, setIsMobileServicesOpen] = useState(true);
+  
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -31,17 +41,61 @@ export const Header: React.FC<HeaderProps> = ({ onOpenApplicationModal, onOpenCa
       }
     };
 
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsServicesDropdownOpen(false);
+      }
+    };
+
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
-  const navLinks = [
+  const handleMouseEnter = () => {
+    if (dropdownTimeoutRef.current) {
+      clearTimeout(dropdownTimeoutRef.current);
+    }
+    setIsServicesDropdownOpen(true);
+  };
+
+  const handleMouseLeave = () => {
+    dropdownTimeoutRef.current = setTimeout(() => {
+      setIsServicesDropdownOpen(false);
+    }, 150);
+  };
+
+  const serviceSubItems = [
+    {
+      name: 'Financial Aid',
+      href: '#financial-aid',
+      description: 'Business, project, building & LPO contract grant assistance',
+      icon: HandHeart,
+      badge: 'Grants & Aid'
+    },
+    {
+      name: 'Savings & Investments',
+      href: '#investments-savings',
+      description: 'Quantum Zenith cooperative high-yield savings & wealth building',
+      icon: TrendingUp,
+      badge: 'High Yield'
+    },
+    {
+      name: 'All Financial Services',
+      href: '#services',
+      description: 'Overview of our complete cooperative financing solutions',
+      icon: Layers,
+      badge: 'Portfolio'
+    }
+  ];
+
+  const standardNavLinks = [
     { name: 'Home', href: '#' },
     { name: 'About Us', href: '#about-us' },
-    { name: 'Services', href: '#services' },
     { name: 'Loans', href: '#loan-products' },
-    { name: 'Financial Aid', href: '#financial-aid' },
-    { name: 'Savings & Investments', href: '#investments-savings' },
     { name: 'How It Works', href: '#how-it-works' },
     { name: 'Contact', href: '#contact' }
   ];
@@ -114,16 +168,122 @@ export const Header: React.FC<HeaderProps> = ({ onOpenApplicationModal, onOpenCa
             </a>
 
             {/* Desktop Navigation Links */}
-            <div className="hidden xl:flex items-center space-x-1 lg:space-x-2">
-              {navLinks.map((link) => (
-                <a
-                  key={link.name}
-                  href={link.href}
-                  className="px-3 py-2 text-sm font-semibold text-zinc-800 hover:text-black hover:bg-yellow-400/20 rounded-lg transition-all duration-150"
+            <div className="hidden lg:flex items-center space-x-1 xl:space-x-2">
+              <a
+                href="#"
+                className="px-3 py-2 text-sm font-semibold text-zinc-800 hover:text-black hover:bg-yellow-400/20 rounded-lg transition-all duration-150"
+              >
+                Home
+              </a>
+              <a
+                href="#about-us"
+                className="px-3 py-2 text-sm font-semibold text-zinc-800 hover:text-black hover:bg-yellow-400/20 rounded-lg transition-all duration-150"
+              >
+                About Us
+              </a>
+
+              {/* Services with Sub-Menu Dropdown */}
+              <div 
+                ref={dropdownRef}
+                className="relative"
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
+              >
+                <button
+                  type="button"
+                  onClick={() => setIsServicesDropdownOpen(!isServicesDropdownOpen)}
+                  className={`flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-lg transition-all duration-150 ${
+                    isServicesDropdownOpen 
+                      ? 'text-black bg-yellow-400/30' 
+                      : 'text-zinc-800 hover:text-black hover:bg-yellow-400/20'
+                  }`}
+                  aria-expanded={isServicesDropdownOpen}
                 >
-                  {link.name}
-                </a>
-              ))}
+                  <span>Services</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isServicesDropdownOpen ? 'rotate-180 text-black' : 'text-zinc-500'}`} />
+                </button>
+
+                {/* Dropdown Menu Card */}
+                <AnimatePresence>
+                  {isServicesDropdownOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 6, scale: 0.98 }}
+                      transition={{ duration: 0.16 }}
+                      className="absolute top-full left-0 mt-1 w-80 sm:w-88 bg-white rounded-2xl shadow-xl border border-zinc-200/90 p-2.5 z-50 backdrop-blur-lg"
+                    >
+                      <div className="text-[11px] font-extrabold uppercase tracking-wider text-zinc-400 px-3 py-1.5 border-b border-zinc-100 flex items-center justify-between">
+                        <span>Cooperative Services</span>
+                        <Sparkles className="w-3 h-3 text-yellow-500" />
+                      </div>
+
+                      <div className="mt-1.5 space-y-1">
+                        {serviceSubItems.map((subItem) => {
+                          const IconComponent = subItem.icon;
+                          return (
+                            <a
+                              key={subItem.name}
+                              href={subItem.href}
+                              onClick={() => setIsServicesDropdownOpen(false)}
+                              className="group flex items-start gap-3 p-2.5 rounded-xl hover:bg-yellow-50/80 transition-all duration-150 border border-transparent hover:border-yellow-200"
+                            >
+                              <div className="w-9 h-9 rounded-lg bg-yellow-100 group-hover:bg-yellow-400 flex items-center justify-center text-zinc-900 group-hover:text-black shrink-0 transition-colors shadow-xs">
+                                <IconComponent className="w-4 h-4" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-1">
+                                  <span className="text-sm font-bold text-black group-hover:text-yellow-600 transition-colors">
+                                    {subItem.name}
+                                  </span>
+                                  {subItem.badge && (
+                                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-zinc-100 group-hover:bg-yellow-200 text-zinc-600 group-hover:text-black">
+                                      {subItem.badge}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-xs text-zinc-500 line-clamp-2 leading-relaxed mt-0.5">
+                                  {subItem.description}
+                                </p>
+                              </div>
+                            </a>
+                          );
+                        })}
+                      </div>
+
+                      <div className="mt-2 pt-2 border-t border-zinc-100 px-2 pb-1">
+                        <a
+                          href="#services"
+                          onClick={() => setIsServicesDropdownOpen(false)}
+                          className="text-xs font-bold text-yellow-600 hover:text-black flex items-center justify-between py-1 px-1.5 rounded-md hover:bg-yellow-50 transition-colors"
+                        >
+                          <span>Explore All Solutions</span>
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </a>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              <a
+                href="#loan-products"
+                className="px-3 py-2 text-sm font-semibold text-zinc-800 hover:text-black hover:bg-yellow-400/20 rounded-lg transition-all duration-150"
+              >
+                Loans
+              </a>
+              <a
+                href="#how-it-works"
+                className="px-3 py-2 text-sm font-semibold text-zinc-800 hover:text-black hover:bg-yellow-400/20 rounded-lg transition-all duration-150"
+              >
+                How It Works
+              </a>
+              <a
+                href="#contact"
+                className="px-3 py-2 text-sm font-semibold text-zinc-800 hover:text-black hover:bg-yellow-400/20 rounded-lg transition-all duration-150"
+              >
+                Contact
+              </a>
             </div>
 
             {/* Header CTAs */}
@@ -182,20 +342,102 @@ export const Header: React.FC<HeaderProps> = ({ onOpenApplicationModal, onOpenCa
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
-            className="xl:hidden bg-white border-b border-zinc-200 shadow-xl overflow-hidden"
+            className="lg:hidden bg-white border-b border-zinc-200 shadow-xl overflow-hidden"
           >
             <div className="max-w-7xl mx-auto px-4 pt-3 pb-6 space-y-1">
-              {navLinks.map((link) => (
-                <a
-                  key={link.name}
-                  href={link.href}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center justify-between px-3 py-2.5 text-base font-semibold text-zinc-900 hover:text-black hover:bg-yellow-50 rounded-lg transition-colors"
+              <a
+                href="#"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center justify-between px-3 py-2.5 text-base font-semibold text-zinc-900 hover:text-black hover:bg-yellow-50 rounded-lg transition-colors"
+              >
+                <span>Home</span>
+                <ChevronRight className="w-4 h-4 text-zinc-400" />
+              </a>
+
+              <a
+                href="#about-us"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center justify-between px-3 py-2.5 text-base font-semibold text-zinc-900 hover:text-black hover:bg-yellow-50 rounded-lg transition-colors"
+              >
+                <span>About Us</span>
+                <ChevronRight className="w-4 h-4 text-zinc-400" />
+              </a>
+
+              {/* Mobile Services Accordion */}
+              <div className="border border-zinc-100 rounded-xl bg-zinc-50/70 overflow-hidden my-1">
+                <button
+                  type="button"
+                  onClick={() => setIsMobileServicesOpen(!isMobileServicesOpen)}
+                  className="w-full flex items-center justify-between px-3.5 py-2.5 text-base font-bold text-zinc-900 hover:text-black"
                 >
-                  <span>{link.name}</span>
-                  <ChevronRight className="w-4 h-4 text-zinc-400" />
-                </a>
-              ))}
+                  <span className="flex items-center gap-2">
+                    <span>Services</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-yellow-400 text-black">
+                      3 solutions
+                    </span>
+                  </span>
+                  <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${isMobileServicesOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                <AnimatePresence>
+                  {isMobileServicesOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="px-3 pb-2.5 pt-1 space-y-1.5 border-t border-zinc-100"
+                    >
+                      {serviceSubItems.map((item) => {
+                        const IconComp = item.icon;
+                        return (
+                          <a
+                            key={item.name}
+                            href={item.href}
+                            onClick={() => setIsMobileMenuOpen(false)}
+                            className="flex items-center gap-3 p-2 rounded-lg bg-white border border-zinc-200/80 hover:bg-yellow-50 transition-colors"
+                          >
+                            <div className="w-8 h-8 rounded-md bg-yellow-400 flex items-center justify-center text-black shrink-0">
+                              <IconComp className="w-4 h-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-bold text-black">{item.name}</p>
+                              <p className="text-[11px] text-zinc-500 truncate">{item.description}</p>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-zinc-400" />
+                          </a>
+                        );
+                      })}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              <a
+                href="#loan-products"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center justify-between px-3 py-2.5 text-base font-semibold text-zinc-900 hover:text-black hover:bg-yellow-50 rounded-lg transition-colors"
+              >
+                <span>Loans</span>
+                <ChevronRight className="w-4 h-4 text-zinc-400" />
+              </a>
+
+              <a
+                href="#how-it-works"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center justify-between px-3 py-2.5 text-base font-semibold text-zinc-900 hover:text-black hover:bg-yellow-50 rounded-lg transition-colors"
+              >
+                <span>How It Works</span>
+                <ChevronRight className="w-4 h-4 text-zinc-400" />
+              </a>
+
+              <a
+                href="#contact"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center justify-between px-3 py-2.5 text-base font-semibold text-zinc-900 hover:text-black hover:bg-yellow-50 rounded-lg transition-colors"
+              >
+                <span>Contact</span>
+                <ChevronRight className="w-4 h-4 text-zinc-400" />
+              </a>
 
               <div className="pt-4 border-t border-zinc-100 mt-2 flex flex-col gap-2.5">
                 <button
