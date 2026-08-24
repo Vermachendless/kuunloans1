@@ -100,6 +100,50 @@ export const Header: React.FC<HeaderProps> = ({ onOpenApplicationModal, onOpenCa
     { name: 'Contact', href: '#contact' }
   ];
 
+  const scrollToTarget = (href: string) => {
+    setIsMobileMenuOpen(false);
+    setIsServicesDropdownOpen(false);
+
+    if (!href || href === '#' || href === '#home') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (window.location.hash) {
+        history.pushState(null, '', window.location.pathname);
+      }
+      return;
+    }
+
+    if (href.startsWith('#')) {
+      const targetId = href.substring(1);
+      const targetEl = document.getElementById(targetId);
+      if (targetEl) {
+        // Measure real current header height dynamically
+        const headerEl = document.querySelector('header');
+        const headerHeight = headerEl ? headerEl.getBoundingClientRect().height : 80;
+        
+        // Compute element's top relative to page
+        const elementRect = targetEl.getBoundingClientRect();
+        const absoluteElementTop = elementRect.top + window.pageYOffset;
+        
+        // Offset by header height + 16px extra breathing space
+        const targetScrollTop = Math.max(0, absoluteElementTop - headerHeight - 16);
+
+        window.scrollTo({
+          top: targetScrollTop,
+          behavior: 'smooth'
+        });
+
+        history.pushState(null, '', href);
+      }
+    }
+  };
+
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (href.startsWith('#') || href === '#') {
+      e.preventDefault();
+      scrollToTarget(href);
+    }
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full transition-all duration-300">
       {/* Top Notification & Quick Contact Bar */}
@@ -148,7 +192,11 @@ export const Header: React.FC<HeaderProps> = ({ onOpenApplicationModal, onOpenCa
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             {/* Brand Logo */}
-            <a href="#" className="flex items-center gap-3 group">
+            <a 
+              href="#home" 
+              onClick={(e) => handleNavClick(e, '#home')}
+              className="flex items-center gap-3 group"
+            >
               <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl overflow-hidden shadow-md border-2 border-yellow-400 group-hover:scale-105 transition-transform duration-200 bg-yellow-400">
                 <img src="/logo.jpg" alt="SilverKuun Loans Logo" className="w-full h-full object-cover" />
               </div>
@@ -170,13 +218,15 @@ export const Header: React.FC<HeaderProps> = ({ onOpenApplicationModal, onOpenCa
             {/* Desktop Navigation Links */}
             <div className="hidden lg:flex items-center space-x-1 xl:space-x-2">
               <a
-                href="#"
+                href="#home"
+                onClick={(e) => handleNavClick(e, '#home')}
                 className="px-3 py-2 text-sm font-semibold text-zinc-800 hover:text-black hover:bg-yellow-400/20 rounded-lg transition-all duration-150"
               >
                 Home
               </a>
               <a
                 href="#about-us"
+                onClick={(e) => handleNavClick(e, '#about-us')}
                 className="px-3 py-2 text-sm font-semibold text-zinc-800 hover:text-black hover:bg-yellow-400/20 rounded-lg transition-all duration-150"
               >
                 About Us
@@ -225,7 +275,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenApplicationModal, onOpenCa
                             <a
                               key={subItem.name}
                               href={subItem.href}
-                              onClick={() => setIsServicesDropdownOpen(false)}
+                              onClick={(e) => handleNavClick(e, subItem.href)}
                               className="group flex items-start gap-3 p-2.5 rounded-xl hover:bg-yellow-50/80 transition-all duration-150 border border-transparent hover:border-yellow-200"
                             >
                               <div className="w-9 h-9 rounded-lg bg-yellow-100 group-hover:bg-yellow-400 flex items-center justify-center text-zinc-900 group-hover:text-black shrink-0 transition-colors shadow-xs">
@@ -254,7 +304,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenApplicationModal, onOpenCa
                       <div className="mt-2 pt-2 border-t border-zinc-100 px-2 pb-1">
                         <a
                           href="#services"
-                          onClick={() => setIsServicesDropdownOpen(false)}
+                          onClick={(e) => handleNavClick(e, '#services')}
                           className="text-xs font-bold text-yellow-600 hover:text-black flex items-center justify-between py-1 px-1.5 rounded-md hover:bg-yellow-50 transition-colors"
                         >
                           <span>Explore All Solutions</span>
@@ -268,18 +318,21 @@ export const Header: React.FC<HeaderProps> = ({ onOpenApplicationModal, onOpenCa
 
               <a
                 href="#loan-products"
+                onClick={(e) => handleNavClick(e, '#loan-products')}
                 className="px-3 py-2 text-sm font-semibold text-zinc-800 hover:text-black hover:bg-yellow-400/20 rounded-lg transition-all duration-150"
               >
                 Loans
               </a>
               <a
                 href="#how-it-works"
+                onClick={(e) => handleNavClick(e, '#how-it-works')}
                 className="px-3 py-2 text-sm font-semibold text-zinc-800 hover:text-black hover:bg-yellow-400/20 rounded-lg transition-all duration-150"
               >
                 How It Works
               </a>
               <a
                 href="#contact"
+                onClick={(e) => handleNavClick(e, '#contact')}
                 className="px-3 py-2 text-sm font-semibold text-zinc-800 hover:text-black hover:bg-yellow-400/20 rounded-lg transition-all duration-150"
               >
                 Contact
@@ -334,20 +387,20 @@ export const Header: React.FC<HeaderProps> = ({ onOpenApplicationModal, onOpenCa
         </div>
       </nav>
 
-      {/* Mobile Slide-out Drawer Menu */}
+      {/* Mobile Slide-out Drawer Menu (Positioned Absolute Overlay to Prevent Layout Shifts) */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2 }}
-            className="lg:hidden bg-white border-b border-zinc-200 shadow-xl overflow-hidden"
+            className="lg:hidden absolute top-full left-0 w-full bg-white border-b border-zinc-200 shadow-2xl overflow-y-auto max-h-[calc(100vh-80px)] z-50"
           >
             <div className="max-w-7xl mx-auto px-4 pt-3 pb-6 space-y-1">
               <a
-                href="#"
-                onClick={() => setIsMobileMenuOpen(false)}
+                href="#home"
+                onClick={(e) => handleNavClick(e, '#home')}
                 className="flex items-center justify-between px-3 py-2.5 text-base font-semibold text-zinc-900 hover:text-black hover:bg-yellow-50 rounded-lg transition-colors"
               >
                 <span>Home</span>
@@ -356,7 +409,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenApplicationModal, onOpenCa
 
               <a
                 href="#about-us"
-                onClick={() => setIsMobileMenuOpen(false)}
+                onClick={(e) => handleNavClick(e, '#about-us')}
                 className="flex items-center justify-between px-3 py-2.5 text-base font-semibold text-zinc-900 hover:text-black hover:bg-yellow-50 rounded-lg transition-colors"
               >
                 <span>About Us</span>
@@ -393,7 +446,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenApplicationModal, onOpenCa
                           <a
                             key={item.name}
                             href={item.href}
-                            onClick={() => setIsMobileMenuOpen(false)}
+                            onClick={(e) => handleNavClick(e, item.href)}
                             className="flex items-center gap-3 p-2 rounded-lg bg-white border border-zinc-200/80 hover:bg-yellow-50 transition-colors"
                           >
                             <div className="w-8 h-8 rounded-md bg-yellow-400 flex items-center justify-center text-black shrink-0">
@@ -414,7 +467,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenApplicationModal, onOpenCa
 
               <a
                 href="#loan-products"
-                onClick={() => setIsMobileMenuOpen(false)}
+                onClick={(e) => handleNavClick(e, '#loan-products')}
                 className="flex items-center justify-between px-3 py-2.5 text-base font-semibold text-zinc-900 hover:text-black hover:bg-yellow-50 rounded-lg transition-colors"
               >
                 <span>Loans</span>
@@ -423,7 +476,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenApplicationModal, onOpenCa
 
               <a
                 href="#how-it-works"
-                onClick={() => setIsMobileMenuOpen(false)}
+                onClick={(e) => handleNavClick(e, '#how-it-works')}
                 className="flex items-center justify-between px-3 py-2.5 text-base font-semibold text-zinc-900 hover:text-black hover:bg-yellow-50 rounded-lg transition-colors"
               >
                 <span>How It Works</span>
@@ -432,7 +485,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenApplicationModal, onOpenCa
 
               <a
                 href="#contact"
-                onClick={() => setIsMobileMenuOpen(false)}
+                onClick={(e) => handleNavClick(e, '#contact')}
                 className="flex items-center justify-between px-3 py-2.5 text-base font-semibold text-zinc-900 hover:text-black hover:bg-yellow-50 rounded-lg transition-colors"
               >
                 <span>Contact</span>

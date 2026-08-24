@@ -49,7 +49,8 @@ export const FinancialSolutions: React.FC<FinancialSolutionsProps> = ({
   };
 
   return (
-    <section id="services" className="py-20 bg-white border-b border-zinc-200">
+    <section id="services" className="py-20 bg-white border-b border-zinc-200 relative">
+      <div id="financial-solutions" className="absolute -top-24 pointer-events-none" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}

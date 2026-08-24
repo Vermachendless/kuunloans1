@@ -25,7 +25,8 @@ export const FAQSection: React.FC<FAQSectionProps> = ({ onOpenQuickContact }) =>
   };
 
   return (
-    <section id="help" className="py-20 sm:py-24 bg-white">
+    <section id="help" className="py-20 sm:py-24 bg-white relative">
+      <div id="faq" className="absolute -top-24 pointer-events-none" />
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}

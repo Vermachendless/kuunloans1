@@ -18,7 +18,8 @@ export const QuantumZenithSection: React.FC<QuantumZenithSectionProps> = ({
   onOpenSavingsInquiry 
 }) => {
   return (
-    <section id="investments-savings" className="py-20 sm:py-24 bg-white border-b border-zinc-200">
+    <section id="investments-savings" className="py-20 sm:py-24 bg-white border-b border-zinc-200 relative">
+      <div id="savings" className="absolute -top-24 pointer-events-none" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         <div className="bg-zinc-50 rounded-3xl p-8 sm:p-12 border border-zinc-200 shadow-xs">

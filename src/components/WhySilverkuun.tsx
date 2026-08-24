@@ -37,7 +37,8 @@ export const WhySilverkuun: React.FC<WhySilverkuunProps> = ({ onOpenApplicationM
   };
 
   return (
-    <section id="about-us" className="py-20 sm:py-24 bg-white border-y border-zinc-200">
+    <section id="about-us" className="py-20 sm:py-24 bg-white border-y border-zinc-200 relative">
+      <div id="about" className="absolute -top-24 pointer-events-none" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}

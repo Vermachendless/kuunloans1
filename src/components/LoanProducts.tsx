@@ -30,7 +30,8 @@ export const LoanProducts: React.FC<LoanProductsProps> = ({
     : LOAN_PRODUCTS.filter(p => p.category === activeFilter);
 
   return (
-    <section id="loan-products" className="py-20 sm:py-24 bg-white">
+    <section id="loan-products" className="py-20 sm:py-24 bg-white relative">
+      <div id="loans" className="absolute -top-24 pointer-events-none" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}

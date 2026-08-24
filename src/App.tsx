@@ -47,40 +47,27 @@ export default function App() {
     setIsFinancialAidModalOpen(true);
   };
 
-  const scrollToCalculator = () => {
-    const el = document.getElementById('loan-calculator');
+  const smoothScrollToElement = (elementId: string) => {
+    const el = document.getElementById(elementId);
     if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
+      const headerEl = document.querySelector('header');
+      const headerHeight = headerEl ? headerEl.getBoundingClientRect().height : 80;
+      const elementRect = el.getBoundingClientRect();
+      const absoluteElementTop = elementRect.top + window.pageYOffset;
+      const targetScrollTop = Math.max(0, absoluteElementTop - headerHeight - 16);
+
+      window.scrollTo({
+        top: targetScrollTop,
+        behavior: 'smooth'
+      });
     }
   };
 
-  const scrollToLoans = () => {
-    const el = document.getElementById('loan-products');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
-  const scrollToFinancialAid = () => {
-    const el = document.getElementById('financial-aid');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
-  const scrollToSavings = () => {
-    const el = document.getElementById('investments-savings');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
-  const scrollToContact = () => {
-    const el = document.getElementById('contact');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
+  const scrollToCalculator = () => smoothScrollToElement('loan-calculator');
+  const scrollToLoans = () => smoothScrollToElement('loan-products');
+  const scrollToFinancialAid = () => smoothScrollToElement('financial-aid');
+  const scrollToSavings = () => smoothScrollToElement('investments-savings');
+  const scrollToContact = () => smoothScrollToElement('contact');
 
   return (
     <div className="min-h-screen flex flex-col bg-neutral-50 text-black selection:bg-yellow-400 selection:text-black">

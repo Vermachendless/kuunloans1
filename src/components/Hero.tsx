@@ -21,7 +21,7 @@ interface HeroProps {
 
 export const Hero: React.FC<HeroProps> = ({ onOpenApplicationModal, onExploreLoans }) => {
   return (
-    <section className="relative overflow-hidden bg-black text-white pt-12 pb-20 sm:pt-16 sm:pb-28 lg:pt-20 lg:pb-32">
+    <section id="home" className="relative overflow-hidden bg-black text-white pt-12 pb-20 sm:pt-16 sm:pb-28 lg:pt-20 lg:pb-32">
       {/* Background Decorative Subtle Glow */}
       <div className="absolute inset-0 bg-[radial-gradient(#27272a_1px,transparent_1px)] [background-size:24px_24px] opacity-40 pointer-events-none" />
       <div className="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 rounded-full bg-yellow-400/10 blur-3xl pointer-events-none" />
