@@ -49,8 +49,8 @@ export const FAQSection: React.FC<FAQSectionProps> = ({ onOpenQuickContact }) =>
             { id: 'all', label: 'All Questions' },
             { id: 'ippis', label: 'IPPIS Loans' },
             { id: 'collateral', label: 'Collateral Facilities' },
-            { id: 'financial_aid', label: 'Financial Aid' },
-            { id: 'savings', label: 'Savings & Investments' }
+            { id: 'financial_aid', label: 'Financial Aid' }
+            // { id: 'savings', label: 'Savings & Investments' }
           ].map((tab) => (
             <button
               key={tab.id}

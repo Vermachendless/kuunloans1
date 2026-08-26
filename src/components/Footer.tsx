@@ -131,11 +131,11 @@ export const Footer: React.FC<FooterProps> = ({ onOpenApplicationModal }) => {
                   Contract / LPO Financing
                 </a>
               </li>
-              <li>
+              {/* <li>
                 <a href="#investments-savings" className="hover:text-yellow-400 transition-colors">
                   Quantum Zenith Savings
                 </a>
-              </li>
+              </li> */}
             </ul>
           </div>
 

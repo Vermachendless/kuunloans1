@@ -377,12 +377,14 @@ export const FAQS: FAQItem[] = [
     question: 'How does Contract & Project Financing work?',
     answer: 'Contract/LPO financing provides working capital to execute verified purchase orders from approved corporate or government clients. We finance up to 80% of the material cost, paying suppliers directly where appropriate, and the loan is liquidated once the client pays the contract invoice.'
   },
+  /*
   {
     id: 'faq-5',
     category: 'savings',
     question: 'What is the connection between SilverKuun and Quantum Zenith?',
     answer: 'SilverKuun collaborates with Quantum Zenith Asset Management to provide our cooperative members with institutional-grade investment management, high-yield fixed treasury options, and regulated wealth management services alongside our internal cooperative savings accounts.'
   },
+  */
   {
     id: 'faq-6',
     category: 'general',
