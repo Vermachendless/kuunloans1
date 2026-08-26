@@ -76,6 +76,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenApplicationModal, onOpenCa
       icon: HandHeart,
       badge: 'Grants & Aid'
     },
+    /*
     {
       name: 'Savings & Investments',
       href: '#investments-savings',
@@ -83,6 +84,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenApplicationModal, onOpenCa
       icon: TrendingUp,
       badge: 'High Yield'
     },
+    */
     {
       name: 'All Financial Services',
       href: '#services',
@@ -426,7 +428,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenApplicationModal, onOpenCa
                   <span className="flex items-center gap-2">
                     <span>Services</span>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-yellow-400 text-black">
-                      3 solutions
+                      {serviceSubItems.length} solutions
                     </span>
                   </span>
                   <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${isMobileServicesOpen ? 'rotate-180' : ''}`} />
