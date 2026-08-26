@@ -12,7 +12,6 @@ export const COMPANY_INFO = {
   ippisMaxLimit: '₦5,000,000',
   phones: [
     '+234 701 529 2816',
-    '+234 201 700 3150',
     '+234 803 794 2635'
   ],
   emails: [
@@ -406,7 +405,7 @@ export const OFFICE_LOCATIONS: OfficeLocation[] = [
     city: 'Abuja (FCT)',
     district: 'Mabushi',
     address: 'Mabushi Business Complex, FCT Abuja',
-    phone: '+234 201 700 3150',
+    phone: '+234 803 794 2635',
     email: 'mabushi@silverkuunloans.com'
   },
   {
@@ -427,7 +426,7 @@ export const OFFICE_LOCATIONS: OfficeLocation[] = [
     city: 'Lagos State',
     district: 'Yaba',
     address: 'Commercial Avenue, Sabo Yaba, Lagos State',
-    phone: '+234 201 700 3150',
+    phone: '+234 701 529 2816',
     email: 'yaba@silverkuunloans.com'
   }
 ];
