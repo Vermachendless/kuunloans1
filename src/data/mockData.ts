@@ -56,6 +56,7 @@ export const FINANCIAL_SOLUTIONS: FinancialSolution[] = [
     actionTarget: '#financial-aid',
     accentColor: 'yellow'
   },
+  /*
   {
     id: 'savings-investment',
     title: 'Savings & Investments',
@@ -72,6 +73,7 @@ export const FINANCIAL_SOLUTIONS: FinancialSolution[] = [
     actionTarget: '#investments-savings',
     accentColor: 'yellow'
   },
+  */
   {
     id: 'business-financing',
     title: 'Business Financing',
