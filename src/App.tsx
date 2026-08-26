@@ -122,10 +122,10 @@ export default function App() {
           onOpenFinancialAidModal={handleOpenFinancialAidModal}
         />
 
-        {/* 8. Quantum Zenith & Savings Partnership */}
-        <QuantumZenithSection 
+        {/* 8. Quantum Zenith & Savings Partnership (Wealth Management & Fixed Savings) */}
+        {/* <QuantumZenithSection 
           onOpenSavingsInquiry={scrollToContact}
-        />
+        /> */}
 
         {/* 9. Testimonials & Member Stories */}
         <Testimonials />
