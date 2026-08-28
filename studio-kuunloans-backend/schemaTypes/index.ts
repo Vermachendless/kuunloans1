@@ -2,6 +2,8 @@
 import {officeLocation} from './objects/officeLocation'
 import {whyChoosePoint} from './objects/whyChoosePoint'
 import {processStep} from './objects/processStep'
+import {loanBenefit} from './objects/loanBenefit'
+import {loanRequirement} from './objects/loanRequirement'
 
 // ─── Document Types ──────────────────────────────────────────────────────────
 import {loanProduct} from './documents/loanProduct'
@@ -21,6 +23,8 @@ export const schemaTypes = [
   officeLocation,
   whyChoosePoint,
   processStep,
+  loanBenefit,
+  loanRequirement,
 
   // Content documents
   loanProduct,
@@ -37,4 +41,3 @@ export const schemaTypes = [
   // Global settings (singleton)
   siteSettings,
 ]
-

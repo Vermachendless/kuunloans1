@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   CheckCircle2, 
   ArrowRight, 
@@ -11,8 +11,8 @@ import {
   Banknote,
   Sliders
 } from 'lucide-react';
-import { LOAN_PRODUCTS } from '../data/mockData';
 import { LoanProduct, LoanCategory } from '../types';
+import { getSanityLoanProducts } from '../lib/sanity';
 
 interface LoanProductsProps {
   onOpenApplicationModal: (loanType?: string) => void;
@@ -23,11 +23,29 @@ export const LoanProducts: React.FC<LoanProductsProps> = ({
   onOpenApplicationModal,
   onOpenCalculatorWithCategory 
 }) => {
+  const [products, setProducts] = useState<LoanProduct[]>([]);
   const [activeFilter, setActiveFilter] = useState<'all' | LoanCategory>('all');
 
+  useEffect(() => {
+    let isMounted = true;
+    getSanityLoanProducts()
+      .then((sanityProducts) => {
+        if (isMounted && sanityProducts) {
+          setProducts(sanityProducts);
+        }
+      })
+      .catch((err) => {
+        console.warn('Failed to fetch loan products from Sanity:', err);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const filteredProducts = activeFilter === 'all' 
-    ? LOAN_PRODUCTS 
-    : LOAN_PRODUCTS.filter(p => p.category === activeFilter);
+    ? products 
+    : products.filter(p => p.category === activeFilter);
 
   return (
     <section id="loan-products" className="py-20 sm:py-24 bg-white relative">
