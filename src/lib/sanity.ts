@@ -1,4 +1,4 @@
-import { LoanProduct, LoanCategory } from '../types';
+import { LoanProduct, LoanCategory, ApplicationFormData } from '../types';
 
 export const SANITY_CONFIG = {
   projectId: 'd1cwze7g',
@@ -199,4 +199,40 @@ export async function getSanityLoanProducts(): Promise<LoanProduct[] | null> {
     return null;
   }
   return rawProducts.map(mapSanityLoanProduct);
+}
+
+/**
+ * Submits a new loan application to the secure server endpoint
+ */
+export async function submitLoanApplication(
+  data: ApplicationFormData & { applicationReference: string; submittedAt?: string }
+): Promise<{ success: boolean; error?: string; reference?: string }> {
+  try {
+    const res = await fetch('/api/submit-loan-application', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    const result = await res.json();
+    if (!res.ok || !result.success) {
+      return {
+        success: false,
+        error: result.error || `Server responded with status ${res.status}`,
+      };
+    }
+
+    return {
+      success: true,
+      reference: result.reference || data.applicationReference,
+    };
+  } catch (err: any) {
+    console.error('Failed to submit loan application:', err);
+    return {
+      success: false,
+      error: err.message || 'Network error submitting loan application.',
+    };
+  }
 }

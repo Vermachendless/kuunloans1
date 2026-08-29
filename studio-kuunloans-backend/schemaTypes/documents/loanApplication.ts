@@ -2,7 +2,7 @@ import {defineField, defineType} from 'sanity'
 
 export const loanApplication = defineType({
   name: 'loanApplication',
-  title: 'Loan Application',
+  title: 'Loan Application Submission',
   type: 'document',
   groups: [
     {name: 'applicant', title: 'Applicant KYC'},
@@ -27,15 +27,15 @@ export const loanApplication = defineType({
       description: 'Current workflow status of this application',
       options: {
         list: [
-          {title: '⏳ Pending Review', value: 'pending'},
-          {title: '🔍 Under Review / KYC Check', value: 'reviewing'},
+          {title: '🆕 New', value: 'new'},
+          {title: '👀 Reviewed', value: 'reviewed'},
+          {title: '⚙️ Processing', value: 'processing'},
           {title: '✅ Approved', value: 'approved'},
           {title: '❌ Rejected', value: 'rejected'},
-          {title: '🎉 Disbursed / Completed', value: 'completed'},
         ],
         layout: 'radio',
       },
-      initialValue: 'pending',
+      initialValue: 'new',
       validation: (Rule) => Rule.required(),
     }),
     defineField({
@@ -44,6 +44,13 @@ export const loanApplication = defineType({
       type: 'datetime',
       group: 'admin',
       initialValue: () => new Date().toISOString(),
+    }),
+    defineField({
+      name: 'source',
+      title: 'Submission Source',
+      type: 'string',
+      group: 'admin',
+      initialValue: 'website',
     }),
     defineField({
       name: 'adminNotes',
@@ -93,11 +100,11 @@ export const loanApplication = defineType({
     }),
     defineField({
       name: 'loanProduct',
-      title: 'Related Loan Product',
+      title: 'Linked Loan Product',
       type: 'reference',
       to: [{type: 'loanProduct'}],
       group: 'loanDetails',
-      description: 'Link to the corresponding Loan Product in CMS (optional)',
+      description: 'Reference to the selected CMS Loan Product',
     }),
     defineField({
       name: 'loanType',
@@ -193,19 +200,21 @@ export const loanApplication = defineType({
       loanType: 'loanType',
       status: 'status',
       ref: 'applicationReference',
+      date: 'submittedAt',
     },
-    prepare({fullName, phone, amount, loanType, status, ref}) {
-      const formattedAmount = amount ? `₦${amount.toLocaleString('en-NG')}` : '₦0'
+    prepare({fullName, phone, amount, loanType, status, ref, date}) {
+      const formattedAmount = amount ? `₦${Number(amount).toLocaleString('en-NG')}` : '₦0'
       const statusMap: Record<string, string> = {
-        pending: '⏳ Pending',
-        reviewing: '🔍 Reviewing',
+        new: '🆕 New',
+        reviewed: '👀 Reviewed',
+        processing: '⚙️ Processing',
         approved: '✅ Approved',
         rejected: '❌ Rejected',
-        completed: '🎉 Disbursed',
       }
+      const formattedDate = date ? new Date(date).toLocaleDateString() : ''
       return {
         title: `${fullName || 'Unnamed Applicant'} — ${formattedAmount}`,
-        subtitle: `${ref ? `[${ref}] ` : ''}${loanType?.toUpperCase() || ''} | ${statusMap[status] || status || 'Pending'} | ${phone || ''}`,
+        subtitle: `${ref ? `[${ref}] ` : ''}${loanType?.toUpperCase() || ''} | ${statusMap[status] || status || 'New'}${formattedDate ? ` | ${formattedDate}` : ''}${phone ? ` | ${phone}` : ''}`,
       }
     },
   },

@@ -9,10 +9,12 @@ import {
   Clock, 
   Building2, 
   FileText,
-  AlertCircle
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ApplicationFormData } from '../types';
+import { submitLoanApplication } from '../lib/sanity';
 
 interface LoanApplicationModalProps {
   isOpen: boolean;
@@ -30,6 +32,8 @@ export const LoanApplicationModal: React.FC<LoanApplicationModalProps> = ({
   initialTenure = 12
 }) => {
   const [step, setStep] = useState<number>(1);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [formData, setFormData] = useState<ApplicationFormData>({
     loanType: initialLoanType,
     requestedAmount: initialAmount,
@@ -62,7 +66,7 @@ export const LoanApplicationModal: React.FC<LoanApplicationModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step === 1) {
       if (!formData.requestedAmount || formData.requestedAmount <= 0) return;
       setStep(2);
@@ -70,22 +74,47 @@ export const LoanApplicationModal: React.FC<LoanApplicationModalProps> = ({
       if (!formData.fullName || !formData.phone) return;
       setStep(3);
     } else if (step === 3) {
-      if (!formData.agreedToTerms) return;
-      // Generate reference
+      if (!formData.agreedToTerms || isSubmitting) return;
+      setIsSubmitting(true);
+      setSubmissionError(null);
+
+      // Generate unique tracking reference
       const randomNum = Math.floor(100000 + Math.random() * 900000);
       const ref = `SKL-${new Date().getFullYear()}-${randomNum}`;
-      setApplicationRef(ref);
-      setStep(4);
+
+      try {
+        const result = await submitLoanApplication({
+          ...formData,
+          applicationReference: ref,
+          submittedAt: new Date().toISOString(),
+        });
+
+        if (result.success) {
+          setApplicationRef(ref);
+          setStep(4);
+        } else {
+          setSubmissionError(result.error || 'Failed to submit application. Please verify your details and try again.');
+        }
+      } catch (err: any) {
+        setSubmissionError(err?.message || 'An unexpected network error occurred while submitting.');
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
   const handleBack = () => {
-    if (step > 1) setStep(step - 1);
+    if (step > 1 && !isSubmitting) {
+      setSubmissionError(null);
+      setStep(step - 1);
+    }
   };
 
   const resetAndClose = () => {
     setStep(1);
     setApplicationRef('');
+    setSubmissionError(null);
+    setIsSubmitting(false);
     onClose();
   };
 
@@ -398,6 +427,14 @@ export const LoanApplicationModal: React.FC<LoanApplicationModalProps> = ({
                 </div>
               )}
 
+              {/* Error Notice */}
+              {submissionError && (
+                <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 shrink-0" />
+                  <span>{submissionError}</span>
+                </div>
+              )}
+
               {/* Agreement checkbox */}
               <div className="pt-3 border-t border-zinc-200">
                 <label className="flex items-start gap-2.5 cursor-pointer text-xs text-zinc-700 font-medium">
@@ -481,7 +518,8 @@ export const LoanApplicationModal: React.FC<LoanApplicationModalProps> = ({
               <button
                 type="button"
                 onClick={handleBack}
-                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-zinc-300 text-black hover:bg-zinc-100 font-bold text-sm transition-colors"
+                disabled={isSubmitting}
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-zinc-300 text-black hover:bg-zinc-100 font-bold text-sm transition-colors disabled:opacity-50"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>Back</span>
@@ -493,15 +531,24 @@ export const LoanApplicationModal: React.FC<LoanApplicationModalProps> = ({
             <button
               type="button"
               onClick={handleNext}
-              disabled={step === 3 && !formData.agreedToTerms}
+              disabled={(step === 3 && !formData.agreedToTerms) || isSubmitting}
               className={`flex items-center gap-2 px-6 py-3 rounded-xl font-black text-sm transition-all shadow-md ${
-                step === 3 && !formData.agreedToTerms
+                (step === 3 && !formData.agreedToTerms) || isSubmitting
                   ? 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
                   : 'bg-yellow-400 hover:bg-yellow-300 text-black border border-yellow-500'
               }`}
             >
-              <span>{step === 3 ? 'Submit Application' : 'Proceed to Next Step'}</span>
-              <ArrowRight className="w-4 h-4 text-black" />
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 text-black animate-spin" />
+                  <span>Submitting Application...</span>
+                </>
+              ) : (
+                <>
+                  <span>{step === 3 ? 'Submit Application' : 'Proceed to Next Step'}</span>
+                  <ArrowRight className="w-4 h-4 text-black" />
+                </>
+              )}
             </button>
           </div>
         )}
