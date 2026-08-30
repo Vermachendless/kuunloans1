@@ -3,6 +3,8 @@ import {structureTool} from 'sanity/structure'
 import type {StructureResolver} from 'sanity/structure'
 import {visionTool} from '@sanity/vision'
 import {schemaTypes} from './schemaTypes'
+import {KuunLoansLogo} from './components/KuunLoansLogo'
+import {kuunloansTheme} from './theme'
 
 // ─── Singleton Desk Structure ────────────────────────────────────────────────
 export const structure: StructureResolver = (S) =>
@@ -30,7 +32,9 @@ export const structure: StructureResolver = (S) =>
 
 export default defineConfig({
   name: 'default',
-  title: 'Kuunloans backend',
+  title: 'KuunLoans Backend',
+  icon: KuunLoansLogo,
+  theme: kuunloansTheme,
 
   projectId: 'd1cwze7g',
   dataset: 'production',
@@ -59,3 +63,4 @@ export default defineConfig({
         : input,
   },
 })
+
