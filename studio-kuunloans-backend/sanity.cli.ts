@@ -9,10 +9,9 @@ export default defineCliConfig({
   deployment: {
     appId: 'n8qk0lj1u16wpf15gj6zj39k',
     /**
-     * Enable auto-updates for studios.
-     * Learn more at https://www.sanity.io/docs/studio/latest-version-of-sanity#k47faf43faf56
+     * Disable auto-updates so the full custom KuunLoans Studio bundle is built and deployed
      */
-    autoUpdates: true,
+    autoUpdates: false,
   },
 })
 
