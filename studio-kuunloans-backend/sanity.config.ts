@@ -1,43 +1,27 @@
 import {defineConfig} from 'sanity'
 import {structureTool} from 'sanity/structure'
-import type {StructureResolver} from 'sanity/structure'
 import {visionTool} from '@sanity/vision'
 import {schemaTypes} from './schemaTypes'
 import {KuunLoansLogo} from './components/KuunLoansLogo'
+import {CustomNavbar} from './components/CustomNavbar'
 import {kuunloansTheme} from './theme'
-
-// ─── Singleton Desk Structure ────────────────────────────────────────────────
-export const structure: StructureResolver = (S) =>
-  S.list()
-    .title('KuunLoans Content')
-    .items([
-      // 1. Singleton: Site Settings & Company Info
-      S.listItem()
-        .title('Site Settings & Company Info')
-        .id('siteSettings')
-        .child(
-          S.document()
-            .schemaType('siteSettings')
-            .documentId('siteSettings')
-            .title('Site Settings & Company Info')
-        ),
-
-      S.divider(),
-
-      // 2. All other document types
-      ...S.documentTypeListItems().filter(
-        (listItem) => listItem.getId() !== 'siteSettings'
-      ),
-    ])
+import {structure} from './structure'
 
 export default defineConfig({
   name: 'default',
-  title: 'KuunLoans Backend',
+  title: 'KuunLoans Admin',
+  subtitle: 'Financial Operations Portal',
   icon: KuunLoansLogo,
   theme: kuunloansTheme,
 
   projectId: 'd1cwze7g',
   dataset: 'production',
+
+  studio: {
+    components: {
+      navbar: CustomNavbar,
+    },
+  },
 
   plugins: [
     structureTool({
@@ -63,4 +47,6 @@ export default defineConfig({
         : input,
   },
 })
+
+
 
