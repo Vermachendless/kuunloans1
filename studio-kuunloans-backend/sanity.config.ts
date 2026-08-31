@@ -17,11 +17,17 @@ export default defineConfig({
   projectId: 'd1cwze7g',
   dataset: 'production',
 
+  auth: {
+    redirectOnSingle: false,
+    loginMethod: 'dual',
+  },
+
   studio: {
     components: {
       navbar: CustomNavbar,
     },
   },
+
 
   plugins: [
     structureTool({
