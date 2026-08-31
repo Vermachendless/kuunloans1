@@ -1,7 +1,46 @@
-import React from 'react'
+import React, {useEffect, useRef} from 'react'
 import type {NavbarProps} from 'sanity'
+import {useRouter} from 'sanity/router'
 
 export function CustomNavbar(props: NavbarProps) {
+  const router = useRouter()
+  const redirectedRef = useRef(false)
+
+  useEffect(() => {
+    // Only perform default landing navigation once on initial root mount
+    if (redirectedRef.current) return
+
+    const pathname = window.location.pathname.replace(/\/+$/, '')
+    // Detect empty root landing URLs (e.g. "", "/", "/structure", "/default", "/default/structure")
+    const isRootLanding =
+      pathname === '' ||
+      pathname === '/structure' ||
+      pathname === '/default' ||
+      pathname === '/default/structure'
+
+    // Check if router state already has an active pane or document open
+    const state = router.state as {tool?: string; panes?: any[]} | undefined
+    const hasPanes =
+      Array.isArray(state?.panes) &&
+      state.panes.some((group) => Array.isArray(group) && group.length > 0)
+
+    if (isRootLanding && !hasPanes) {
+      redirectedRef.current = true
+      try {
+        if (typeof router.navigateUrl === 'function') {
+          router.navigateUrl({path: '/structure/dashboard-overview', replace: true})
+        } else if (typeof router.navigate === 'function') {
+          router.navigate(
+            {tool: 'structure', panes: [[{id: 'dashboard-overview'}]]},
+            {replace: true}
+          )
+        }
+      } catch (err) {
+        console.warn('Initial dashboard landing redirect notice:', err)
+      }
+    }
+  }, [router, router.state])
+
   return (
     <div style={{display: 'flex', flexDirection: 'column'}}>
       {/* Top KuunLoans Financial Services Brand Bar */}
