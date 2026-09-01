@@ -1,4 +1,4 @@
-import {defineField, defineType} from 'sanity'
+import {defineArrayMember, defineField, defineType} from 'sanity'
 
 export const loanApplication = defineType({
   name: 'loanApplication',
@@ -182,6 +182,23 @@ export const loanApplication = defineType({
       group: 'employment',
       rows: 3,
       description: 'For collateral loans: automobile or property particulars',
+    }),
+    defineField({
+      name: 'kycDocuments',
+      title: 'KYC / Supporting Documents',
+      type: 'array',
+      group: 'applicant',
+      description: 'Uploaded applicant KYC & verification documents (Maximum 4 files: PDF, JPG, PNG, WEBP)',
+      of: [
+        defineArrayMember({
+          type: 'file',
+          options: {
+            storeOriginalFilename: true,
+            accept: '.pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp',
+          },
+        }),
+      ],
+      validation: (Rule) => Rule.max(4).error('Maximum of 4 KYC documents allowed.'),
     }),
     defineField({
       name: 'agreedToTerms',

@@ -10,11 +10,36 @@ import {
   Building2, 
   FileText,
   AlertCircle,
-  Loader2
+  Loader2,
+  Upload
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ApplicationFormData } from '../types';
+import { ApplicationFormData, SelectedKYCDocument } from '../types';
 import { submitLoanApplication } from '../lib/sanity';
+
+const formatFileSize = (bytes: number): string => {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const getFileDisplayType = (file: File): string => {
+  const ext = file.name.split('.').pop()?.toUpperCase() || '';
+  if (ext === 'PDF') return 'PDF Document';
+  if (['JPG', 'JPEG'].includes(ext)) return 'JPEG Image';
+  if (ext === 'PNG') return 'PNG Image';
+  if (ext === 'WEBP') return 'WEBP Image';
+  return ext ? `${ext} File` : 'Document';
+};
+
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+    reader.readAsDataURL(file);
+  });
+};
 
 interface LoanApplicationModalProps {
   isOpen: boolean;
@@ -34,6 +59,10 @@ export const LoanApplicationModal: React.FC<LoanApplicationModalProps> = ({
   const [step, setStep] = useState<number>(1);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const [selectedDocuments, setSelectedDocuments] = useState<SelectedKYCDocument[]>([]);
+  const [documentError, setDocumentError] = useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
   const [formData, setFormData] = useState<ApplicationFormData>({
     loanType: initialLoanType,
     requestedAmount: initialAmount,
@@ -66,6 +95,71 @@ export const LoanApplicationModal: React.FC<LoanApplicationModalProps> = ({
 
   if (!isOpen) return null;
 
+  const handleFilesSelected = (fileList: FileList | null) => {
+    if (!fileList || fileList.length === 0) return;
+    setDocumentError(null);
+
+    const incomingFiles = Array.from(fileList);
+    const allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'webp'];
+    const allowedMimeTypes = [
+      'application/pdf',
+      'image/jpeg',
+      'image/png',
+      'image/webp'
+    ];
+    const maxBytes = 10 * 1024 * 1024; // 10 MB limit
+
+    // 1. Check total count limit
+    if (selectedDocuments.length + incomingFiles.length > 4) {
+      setDocumentError(`Maximum of 4 documents allowed. You currently have ${selectedDocuments.length} selected and tried to add ${incomingFiles.length}.`);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    const validNewDocs: SelectedKYCDocument[] = [];
+
+    for (const file of incomingFiles) {
+      const ext = (file.name.split('.').pop() || '').toLowerCase();
+      const isExtensionAllowed = allowedExtensions.includes(ext);
+      const isMimeAllowed = !file.type || allowedMimeTypes.includes(file.type.toLowerCase());
+
+      if (!isExtensionAllowed || !isMimeAllowed) {
+        setDocumentError(`Unsupported format for "${file.name}". Please upload PDF, JPG, PNG, or WEBP.`);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return;
+      }
+
+      if (file.size > maxBytes) {
+        setDocumentError(`"${file.name}" exceeds the 10 MB limit (${formatFileSize(file.size)}).`);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return;
+      }
+
+      const isDuplicate = selectedDocuments.some((d) => d.name === file.name && d.size === file.size);
+      if (isDuplicate) {
+        setDocumentError(`"${file.name}" has already been selected.`);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return;
+      }
+
+      validNewDocs.push({
+        id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+        file,
+        name: file.name,
+        type: getFileDisplayType(file),
+        size: file.size,
+      });
+    }
+
+    setSelectedDocuments((prev) => [...prev, ...validNewDocs]);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleRemoveDocument = (id: string) => {
+    setSelectedDocuments((prev) => prev.filter((doc) => doc.id !== id));
+    setDocumentError(null);
+  };
+
   const handleNext = async () => {
     if (step === 1) {
       if (!formData.requestedAmount || formData.requestedAmount <= 0) return;
@@ -83,8 +177,24 @@ export const LoanApplicationModal: React.FC<LoanApplicationModalProps> = ({
       const ref = `SKL-${new Date().getFullYear()}-${randomNum}`;
 
       try {
+        let kycDocsPayload: any[] | undefined = undefined;
+        if (selectedDocuments.length > 0) {
+          kycDocsPayload = await Promise.all(
+            selectedDocuments.map(async (doc) => {
+              const base64 = await fileToBase64(doc.file);
+              return {
+                name: doc.name,
+                type: doc.file.type || (doc.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg'),
+                size: doc.size,
+                base64,
+              };
+            })
+          );
+        }
+
         const result = await submitLoanApplication({
           ...formData,
+          kycDocuments: kycDocsPayload,
           applicationReference: ref,
           submittedAt: new Date().toISOString(),
         });
@@ -106,6 +216,7 @@ export const LoanApplicationModal: React.FC<LoanApplicationModalProps> = ({
   const handleBack = () => {
     if (step > 1 && !isSubmitting) {
       setSubmissionError(null);
+      setDocumentError(null);
       setStep(step - 1);
     }
   };
@@ -114,6 +225,8 @@ export const LoanApplicationModal: React.FC<LoanApplicationModalProps> = ({
     setStep(1);
     setApplicationRef('');
     setSubmissionError(null);
+    setDocumentError(null);
+    setSelectedDocuments([]);
     setIsSubmitting(false);
     onClose();
   };
@@ -426,6 +539,109 @@ export const LoanApplicationModal: React.FC<LoanApplicationModalProps> = ({
                   />
                 </div>
               )}
+
+              {/* KYC / Supporting Documents Field */}
+              <div className="p-4 rounded-2xl bg-zinc-50 border border-zinc-200 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-black">
+                      KYC / Supporting Documents
+                    </label>
+                    <p className="text-xs text-zinc-500 mt-0.5 font-medium">
+                      Upload up to 4 documents to support your application.
+                    </p>
+                  </div>
+                  <span className="text-[11px] font-bold text-zinc-600 bg-white border border-zinc-200 px-2.5 py-0.5 rounded-full shrink-0">
+                    {selectedDocuments.length} of 4 files uploaded
+                  </span>
+                </div>
+
+                {/* File input / Choose files trigger */}
+                {selectedDocuments.length < 4 ? (
+                  <div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp"
+                      onChange={(e) => handleFilesSelected(e.target.files)}
+                      disabled={isSubmitting}
+                      className="hidden"
+                      id="kyc-file-upload-input"
+                    />
+                    <label
+                      htmlFor="kyc-file-upload-input"
+                      className={`flex flex-col sm:flex-row items-center justify-center gap-2.5 p-4 border-2 border-dashed rounded-xl cursor-pointer transition-all ${
+                        isSubmitting
+                          ? 'opacity-50 cursor-not-allowed border-zinc-200 bg-zinc-100'
+                          : 'border-zinc-300 hover:border-black bg-white hover:bg-yellow-400/10'
+                      }`}
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-zinc-100 flex items-center justify-center shrink-0">
+                        <Upload className="w-4 h-4 text-zinc-800" />
+                      </div>
+                      <div className="text-center sm:text-left">
+                        <span className="text-xs font-black text-black">
+                          Choose files
+                        </span>
+                        <span className="text-xs text-zinc-500 block sm:inline sm:ml-1.5 font-medium">
+                          (PDF, JPG, PNG, WEBP — Max 10 MB per file)
+                        </span>
+                      </div>
+                    </label>
+                  </div>
+                ) : (
+                  <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>Maximum of 4 documents reached.</span>
+                  </div>
+                )}
+
+                {/* Local validation error message */}
+                {documentError && (
+                  <div className="p-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 shrink-0" />
+                    <span className="font-medium">{documentError}</span>
+                  </div>
+                )}
+
+                {/* Clean list of selected files */}
+                {selectedDocuments.length > 0 && (
+                  <div className="space-y-2 pt-1">
+                    {selectedDocuments.map((doc) => (
+                      <div
+                        key={doc.id}
+                        className="flex items-center justify-between p-2.5 rounded-xl bg-white border border-zinc-200 shadow-2xs hover:border-zinc-300 transition-colors text-xs"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                          <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 font-black text-xs">
+                            ✓
+                          </span>
+                          <div className="min-w-0">
+                            <span className="font-bold text-black truncate block" title={doc.name}>
+                              {doc.name}
+                            </span>
+                            <div className="flex items-center gap-2 text-[11px] text-zinc-500 font-medium">
+                              <span>{doc.type}</span>
+                              <span>•</span>
+                              <span>{formatFileSize(doc.size)}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveDocument(doc.id)}
+                          disabled={isSubmitting}
+                          className="shrink-0 text-xs font-bold text-red-600 hover:text-red-700 hover:bg-red-50 px-2.5 py-1 rounded-lg transition-colors border border-transparent hover:border-red-200 disabled:opacity-50"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               {/* Error Notice */}
               {submissionError && (

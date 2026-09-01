@@ -67,6 +67,21 @@ export interface FAQItem {
   answer: string;
 }
 
+export interface KYCDocumentPayload {
+  name: string;
+  type: string;
+  size: number;
+  base64: string;
+}
+
+export interface SelectedKYCDocument {
+  id: string;
+  file: File;
+  name: string;
+  type: string;
+  size: number;
+}
+
 export interface ApplicationFormData {
   loanType: string;
   requestedAmount: number;
@@ -82,4 +97,6 @@ export interface ApplicationFormData {
   collateralDescription?: string;
   purpose: string;
   agreedToTerms: boolean;
+  kycDocuments?: KYCDocumentPayload[];
 }
+
