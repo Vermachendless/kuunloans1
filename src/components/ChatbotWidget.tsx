@@ -518,29 +518,31 @@ export const ChatbotWidget: React.FC = () => {
   return (
     <>
       {/* Floating Chatbot Toggle Launcher Button */}
-      <div className="fixed bottom-6 right-6 z-40">
+      <div className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-40">
         {!isOpen && (
-          <button
-            id="chatbot-launcher-button"
-            type="button"
-            onClick={() => setIsOpen(true)}
-            aria-label="Open KuunLoans Assistant Chat"
-            className="group relative flex items-center gap-2.5 px-4 py-3.5 rounded-full bg-yellow-400 hover:bg-yellow-300 text-black font-black shadow-xl hover:shadow-2xl border-2 border-yellow-500 transition-all duration-200 transform hover:-translate-y-1 active:translate-y-0"
-          >
-            <div className="relative">
-              <Bot className="w-5 h-5 text-black" />
+          <div className="relative group">
+            <button
+              id="chatbot-launcher-button"
+              type="button"
+              onClick={() => setIsOpen(true)}
+              aria-label="Chat with KuunLoans"
+              title="Chat with KuunLoans"
+              className="w-12 h-12 sm:w-13 sm:h-13 rounded-full bg-yellow-400 hover:bg-yellow-300 text-black flex items-center justify-center shadow-lg hover:shadow-xl border-2 border-yellow-500 transition-all duration-200 hover:scale-105 active:scale-95 focus:outline-hidden focus:ring-2 focus:ring-black focus:ring-offset-2"
+            >
+              <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6 text-black transition-transform duration-200 group-hover:scale-110" />
               {hasUnread && (
-                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-600 border-2 border-white animate-pulse" />
+                <span className="absolute top-0 right-0 w-3 h-3 rounded-full bg-red-600 border-2 border-white animate-pulse" />
               )}
+            </button>
+
+            {/* Subtle Accessible Floating Tooltip */}
+            <div 
+              role="tooltip"
+              className="absolute right-full mr-3 top-1/2 -translate-y-1/2 hidden sm:block pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap bg-black text-white text-[11px] font-bold px-2.5 py-1 rounded-md shadow-md"
+            >
+              Chat with KuunLoans
             </div>
-            <span className="text-xs sm:text-sm font-black uppercase tracking-wider">
-              Chat Assistant
-            </span>
-            <span className="flex h-2 w-2 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-black opacity-40"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-black"></span>
-            </span>
-          </button>
+          </div>
         )}
       </div>
 
