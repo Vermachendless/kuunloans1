@@ -8,26 +8,49 @@ import {
   CheckCircle2, 
   ShieldCheck, 
   Building2,
-  Headphones
+  Headphones,
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
 import { OFFICE_LOCATIONS, COMPANY_INFO } from '../data/mockData';
+import { submitContactEnquiry } from '../lib/sanity';
 
 export const ContactSection: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
-    subject: 'General Loan Inquiry',
+    subject: 'General Information',
     location: 'Abuja (Utako)',
     message: ''
   });
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.phone) return;
-    setIsSubmitted(true);
+    setSubmitError(null);
+
+    if (!formData.name.trim() || !formData.phone.trim()) {
+      setSubmitError('Please enter your full name and phone number.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const result = await submitContactEnquiry(formData);
+      if (result.success) {
+        setIsSubmitted(true);
+      } else {
+        setSubmitError(result.error || 'Failed to submit your enquiry. Please try again.');
+      }
+    } catch (err: any) {
+      setSubmitError(err.message || 'A network error occurred. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -164,14 +187,32 @@ export const ContactSection: React.FC = () => {
                     </p>
                     <button
                       type="button"
-                      onClick={() => setIsSubmitted(false)}
+                      onClick={() => {
+                        setFormData({
+                          name: '',
+                          email: '',
+                          phone: '',
+                          subject: 'General Information',
+                          location: 'Abuja (Utako)',
+                          message: '',
+                        });
+                        setSubmitError(null);
+                        setIsSubmitted(false);
+                      }}
                       className="mt-5 px-4 py-2 rounded-lg bg-black text-white hover:bg-zinc-800 text-xs font-bold transition-colors"
                     >
                       Send Another Message
                     </button>
                   </div>
                 ) : (
-                  <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    {submitError && (
+                      <div className="mb-4 p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                        <span>{submitError}</span>
+                      </div>
+                    )}
+                    <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                       <label className="block text-xs font-bold uppercase tracking-wider text-black mb-1.5">
                         Full Name *
@@ -266,13 +307,24 @@ export const ContactSection: React.FC = () => {
 
                     <button
                       type="submit"
-                      className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-black font-black text-sm transition-colors shadow-md border border-yellow-500"
+                      disabled={isSubmitting}
+                      className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-black font-black text-sm transition-colors shadow-md border border-yellow-500 disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                      <Send className="w-4 h-4 text-black" />
-                      <span>Submit Inquiry</span>
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="w-4 h-4 text-black animate-spin" />
+                          <span>Submitting Inquiry...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-4 h-4 text-black" />
+                          <span>Submit Inquiry</span>
+                        </>
+                      )}
                     </button>
                   </form>
-                )}
+                </div>
+              )}
               </div>
 
               <div className="mt-6 pt-4 border-t border-zinc-200 flex items-center gap-2 text-zinc-500 text-xs font-medium">

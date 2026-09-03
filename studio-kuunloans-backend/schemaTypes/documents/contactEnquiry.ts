@@ -35,6 +35,13 @@ export const contactEnquiry = defineType({
       initialValue: () => new Date().toISOString(),
     }),
     defineField({
+      name: 'source',
+      title: 'Submission Source',
+      type: 'string',
+      group: 'admin',
+      initialValue: 'website',
+    }),
+    defineField({
       name: 'adminNotes',
       title: 'Internal Staff Notes',
       type: 'text',

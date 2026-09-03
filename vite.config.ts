@@ -268,9 +268,121 @@ function loanApplicationApiPlugin(): Plugin {
   };
 }
 
+function contactEnquiryApiPlugin(): Plugin {
+  return {
+    name: 'contact-enquiry-api-plugin',
+    configureServer(server) {
+      server.middlewares.use(async (req, res, next) => {
+        if (req.url === '/api/submit-contact-enquiry' && req.method === 'POST') {
+          let body = '';
+          req.on('data', (chunk) => {
+            body += chunk;
+          });
+          req.on('end', async () => {
+            try {
+              if (!body) {
+                res.statusCode = 400;
+                res.setHeader('Content-Type', 'application/json');
+                res.end(JSON.stringify({ error: 'Request body cannot be empty.' }));
+                return;
+              }
+
+              const parsed = JSON.parse(body);
+              const { name, phone, email, subject, location, message } = parsed;
+
+              if (!name || typeof name !== 'string' || !name.trim()) {
+                res.statusCode = 400;
+                res.setHeader('Content-Type', 'application/json');
+                res.end(JSON.stringify({ error: 'Full Name is required.' }));
+                return;
+              }
+
+              if (!phone || typeof phone !== 'string' || !phone.trim()) {
+                res.statusCode = 400;
+                res.setHeader('Content-Type', 'application/json');
+                res.end(JSON.stringify({ error: 'Phone Number is required.' }));
+                return;
+              }
+
+              const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+              if (email && typeof email === 'string' && email.trim().length > 0) {
+                if (!EMAIL_REGEX.test(email.trim())) {
+                  res.statusCode = 400;
+                  res.setHeader('Content-Type', 'application/json');
+                  res.end(JSON.stringify({ error: 'Invalid email address format.' }));
+                  return;
+                }
+              }
+
+              const token = getSanityWriteToken();
+              if (!token) {
+                res.statusCode = 500;
+                res.setHeader('Content-Type', 'application/json');
+                res.end(JSON.stringify({ error: 'Sanity write token is missing on the server.' }));
+                return;
+              }
+
+              const doc = {
+                _type: 'contactEnquiry',
+                name: name.trim(),
+                phone: phone.trim(),
+                email: email && typeof email === 'string' && email.trim().length > 0 ? email.trim() : undefined,
+                subject: subject && typeof subject === 'string' && subject.trim().length > 0 ? subject.trim() : 'General Information',
+                location: location && typeof location === 'string' && location.trim().length > 0 ? location.trim() : 'Abuja (Utako)',
+                message: message && typeof message === 'string' && message.trim().length > 0 ? message.trim() : '(No message details provided)',
+                status: 'new',
+                submittedAt: new Date().toISOString(),
+                source: 'website',
+              };
+
+              const sanityRes = await fetch(
+                `https://${SANITY_PROJECT_ID}.api.sanity.io/v2024-01-01/data/mutate/${SANITY_DATASET}?returnDocuments=true`,
+                {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                  },
+                  body: JSON.stringify({
+                    mutations: [{ create: doc }],
+                  }),
+                }
+              );
+
+              const result = await sanityRes.json();
+              if (!sanityRes.ok) {
+                res.statusCode = sanityRes.status;
+                res.setHeader('Content-Type', 'application/json');
+                res.end(JSON.stringify({ error: result.message || 'Failed to submit contact enquiry to Sanity.' }));
+                return;
+              }
+
+              const documentId = result.results?.[0]?.document?._id || result.results?.[0]?.id;
+
+              res.statusCode = 200;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({
+                success: true,
+                documentId,
+                message: 'Enquiry submitted successfully.'
+              }));
+            } catch (err: any) {
+              res.statusCode = 500;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({ error: err.message || 'Internal server error while processing contact enquiry.' }));
+            }
+          });
+        } else {
+          next();
+        }
+      });
+    },
+  };
+}
+
 export default defineConfig(() => {
   return {
-    plugins: [react(), tailwindcss(), loanApplicationApiPlugin()],
+    plugins: [react(), tailwindcss(), loanApplicationApiPlugin(), contactEnquiryApiPlugin()],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

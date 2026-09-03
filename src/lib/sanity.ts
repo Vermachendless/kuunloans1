@@ -236,3 +236,49 @@ export async function submitLoanApplication(
     };
   }
 }
+
+export interface ContactEnquiryData {
+  name: string;
+  phone: string;
+  email?: string;
+  subject?: string;
+  location?: string;
+  message?: string;
+}
+
+/**
+ * Submits a new contact enquiry to the secure server endpoint
+ */
+export async function submitContactEnquiry(
+  data: ContactEnquiryData
+): Promise<{ success: boolean; error?: string; documentId?: string }> {
+  try {
+    const res = await fetch('/api/submit-contact-enquiry', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    const result = await res.json();
+    if (!res.ok || !result.success) {
+      return {
+        success: false,
+        error: result.error || `Server responded with status ${res.status}`,
+      };
+    }
+
+    return {
+      success: true,
+      documentId: result.documentId,
+    };
+  } catch (err: any) {
+    console.error('Failed to submit contact enquiry:', err);
+    return {
+      success: false,
+      error: err.message || 'Network error submitting contact enquiry.',
+    };
+  }
+}
+

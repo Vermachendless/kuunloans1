@@ -123,7 +123,10 @@ export const structure: StructureResolver = (S) =>
                     .title('General Contact Enquiries')
                     .schemaType('contactEnquiry')
                     .filter('_type == "contactEnquiry"')
-                    .defaultOrdering([{field: '_createdAt', direction: 'desc'}])
+                    .defaultOrdering([
+                      {field: 'submittedAt', direction: 'desc'},
+                      {field: '_createdAt', direction: 'desc'},
+                    ])
                 ),
             ])
         ),
