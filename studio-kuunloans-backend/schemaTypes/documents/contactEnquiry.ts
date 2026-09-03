@@ -39,7 +39,20 @@ export const contactEnquiry = defineType({
       title: 'Submission Source',
       type: 'string',
       group: 'admin',
+      options: {
+        list: [
+          {title: '🌐 Website Enquiry Form', value: 'website'},
+          {title: '🤖 Website Chatbot Escalation', value: 'chatbot'},
+        ],
+      },
       initialValue: 'website',
+    }),
+    defineField({
+      name: 'escalationReason',
+      title: 'Escalation Reason / Trigger',
+      type: 'string',
+      group: 'admin',
+      description: 'Reason for escalating chatbot conversation to administrator',
     }),
     defineField({
       name: 'adminNotes',
@@ -116,6 +129,14 @@ export const contactEnquiry = defineType({
       description: 'Client message, requirements, facility amount, or questions',
       validation: (Rule) => Rule.required(),
     }),
+    defineField({
+      name: 'chatTranscript',
+      title: 'Chatbot Conversation Transcript',
+      type: 'text',
+      group: 'message',
+      rows: 6,
+      description: 'Full dialogue history between the visitor and chatbot prior to escalation',
+    }),
   ],
   preview: {
     select: {
@@ -123,16 +144,18 @@ export const contactEnquiry = defineType({
       phone: 'phone',
       subject: 'subject',
       status: 'status',
+      source: 'source',
     },
-    prepare({name, phone, subject, status}) {
+    prepare({name, phone, subject, status, source}) {
       const statusMap: Record<string, string> = {
         new: '🆕',
         contacted: '📞',
         resolved: '✅',
         archived: '🗂',
       }
+      const sourceBadge = source === 'chatbot' ? '🤖 [Chatbot]' : '🌐 [Web]'
       return {
-        title: `${name || 'Unknown'} — ${phone || ''}`,
+        title: `${sourceBadge} ${name || 'Unknown'} — ${phone || ''}`,
         subtitle: `${statusMap[status] || ''} ${subject || 'General Inquiry'}`,
       }
     },

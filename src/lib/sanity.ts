@@ -239,11 +239,14 @@ export async function submitLoanApplication(
 
 export interface ContactEnquiryData {
   name: string;
-  phone: string;
+  phone?: string;
   email?: string;
   subject?: string;
   location?: string;
   message?: string;
+  source?: 'website' | 'chatbot' | 'website-chatbot';
+  escalationReason?: string;
+  chatTranscript?: string;
 }
 
 /**

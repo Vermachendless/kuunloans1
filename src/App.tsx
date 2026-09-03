@@ -15,6 +15,7 @@ import { CTASection } from './components/CTASection';
 import { Footer } from './components/Footer';
 import { LoanApplicationModal } from './components/LoanApplicationModal';
 import { FinancialAidModal } from './components/FinancialAidModal';
+import { ChatbotWidget } from './components/ChatbotWidget';
 import { FinancialAidCategory, LoanCategory } from './types';
 
 export default function App() {
@@ -164,6 +165,9 @@ export default function App() {
         onClose={() => setIsFinancialAidModalOpen(false)}
         selectedCategory={selectedAidCategory}
       />
+
+      {/* KuunLoans Assistant Chatbot */}
+      <ChatbotWidget />
     </div>
   );
 }

@@ -53,7 +53,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Request body cannot be empty.' });
     }
 
-    const { name, phone, email, subject, location, message } = body;
+    const { name, phone, email, subject, location, message, source, escalationReason, chatTranscript } = body;
+
+    const isChatbot = source === 'chatbot' || source === 'website-chatbot';
 
     // Validate required fields
     if (!name || typeof name !== 'string' || !name.trim()) {
@@ -62,15 +64,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    if (!phone || typeof phone !== 'string' || !phone.trim()) {
+    const trimmedPhone = phone && typeof phone === 'string' ? phone.trim() : '';
+    const trimmedEmail = email && typeof email === 'string' ? email.trim() : '';
+
+    if (!isChatbot && !trimmedPhone) {
       return res.status(400).json({
         error: 'Phone Number is required.',
       });
     }
 
+    if (isChatbot && !trimmedPhone && !trimmedEmail) {
+      return res.status(400).json({
+        error: 'Please provide either a phone number or email address so an administrator can reach you.',
+      });
+    }
+
     // Validate optional email format
-    if (email && typeof email === 'string' && email.trim().length > 0) {
-      if (!EMAIL_REGEX.test(email.trim())) {
+    if (trimmedEmail.length > 0) {
+      if (!EMAIL_REGEX.test(trimmedEmail)) {
         return res.status(400).json({
           error: 'Invalid email address format.',
         });
@@ -85,18 +96,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    const doc = {
+    const doc: any = {
       _type: 'contactEnquiry',
       name: name.trim(),
-      phone: phone.trim(),
-      email: email && typeof email === 'string' && email.trim().length > 0 ? email.trim() : undefined,
-      subject: subject && typeof subject === 'string' && subject.trim().length > 0 ? subject.trim() : 'General Information',
-      location: location && typeof location === 'string' && location.trim().length > 0 ? location.trim() : 'Abuja (Utako)',
-      message: message && typeof message === 'string' && message.trim().length > 0 ? message.trim() : '(No message details provided)',
+      phone: trimmedPhone || '(Not provided)',
+      email: trimmedEmail || undefined,
+      subject: subject && typeof subject === 'string' && subject.trim().length > 0 
+        ? subject.trim() 
+        : (isChatbot ? 'Chatbot Admin Escalation' : 'General Information'),
+      location: location && typeof location === 'string' && location.trim().length > 0 
+        ? location.trim() 
+        : 'Abuja (Utako)',
+      message: message && typeof message === 'string' && message.trim().length > 0 
+        ? message.trim() 
+        : '(No message details provided)',
       status: 'new',
       submittedAt: new Date().toISOString(),
-      source: 'website',
+      source: isChatbot ? 'website-chatbot' : 'website',
     };
+
+    if (isChatbot) {
+      if (escalationReason && typeof escalationReason === 'string') {
+        doc.escalationReason = escalationReason.trim();
+      }
+      if (chatTranscript && typeof chatTranscript === 'string') {
+        doc.chatTranscript = chatTranscript.trim();
+      }
+    }
 
     const sanityEndpoint = `https://${SANITY_PROJECT_ID}.api.sanity.io/v${SANITY_API_VERSION}/data/mutate/${SANITY_DATASET}?returnDocuments=true`;
 

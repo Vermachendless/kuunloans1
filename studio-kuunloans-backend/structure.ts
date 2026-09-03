@@ -115,14 +115,42 @@ export const structure: StructureResolver = (S) =>
                     .defaultOrdering([{field: '_createdAt', direction: 'desc'}])
                 ),
               S.listItem()
-                .title('General Contact Enquiries')
+                .title('General Contact Enquiries (All)')
                 .id('contactEnquiries')
                 .icon(MailIcon)
                 .child(
                   S.documentList()
-                    .title('General Contact Enquiries')
+                    .title('All Contact Enquiries')
                     .schemaType('contactEnquiry')
                     .filter('_type == "contactEnquiry"')
+                    .defaultOrdering([
+                      {field: 'submittedAt', direction: 'desc'},
+                      {field: '_createdAt', direction: 'desc'},
+                    ])
+                ),
+              S.listItem()
+                .title('🤖 Chatbot Escalations')
+                .id('chatbotEscalations')
+                .icon(MailIcon)
+                .child(
+                  S.documentList()
+                    .title('Website Chatbot Escalations')
+                    .schemaType('contactEnquiry')
+                    .filter('_type == "contactEnquiry" && (source == "website-chatbot" || source == "chatbot")')
+                    .defaultOrdering([
+                      {field: 'submittedAt', direction: 'desc'},
+                      {field: '_createdAt', direction: 'desc'},
+                    ])
+                ),
+              S.listItem()
+                .title('🌐 Website Contact Forms')
+                .id('webContactForms')
+                .icon(MailIcon)
+                .child(
+                  S.documentList()
+                    .title('Website Contact Form Submissions')
+                    .schemaType('contactEnquiry')
+                    .filter('_type == "contactEnquiry" && (source == "website" || !defined(source))')
                     .defaultOrdering([
                       {field: 'submittedAt', direction: 'desc'},
                       {field: '_createdAt', direction: 'desc'},
