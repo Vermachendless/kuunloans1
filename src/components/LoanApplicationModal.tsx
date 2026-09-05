@@ -14,8 +14,9 @@ import {
   Upload
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ApplicationFormData, SelectedKYCDocument } from '../types';
-import { submitLoanApplication } from '../lib/sanity';
+import { ApplicationFormData, SelectedKYCDocument, LoanProduct } from '../types';
+import { submitLoanApplication, getSanityLoanProducts } from '../lib/sanity';
+import { LOAN_PRODUCTS } from '../data/mockData';
 
 const formatFileSize = (bytes: number): string => {
   if (bytes < 1024) return `${bytes} B`;
@@ -81,6 +82,38 @@ export const LoanApplicationModal: React.FC<LoanApplicationModalProps> = ({
   });
 
   const [applicationRef, setApplicationRef] = useState<string>('');
+  const [loanProducts, setLoanProducts] = useState<LoanProduct[]>(LOAN_PRODUCTS);
+
+  // Fetch active loan products from Sanity with fallback to mock data
+  React.useEffect(() => {
+    let isMounted = true;
+    getSanityLoanProducts()
+      .then((sanityProducts) => {
+        if (isMounted && sanityProducts && sanityProducts.length > 0) {
+          setLoanProducts(sanityProducts);
+        }
+      })
+      .catch((err) => {
+        console.warn('Failed to fetch loan products from Sanity in modal:', err);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Sync initial loan values when modal opens or initial props change
+  React.useEffect(() => {
+    if (isOpen && initialLoanType) {
+      setFormData((prev) => ({
+        ...prev,
+        loanType: initialLoanType,
+        requestedAmount: initialAmount || prev.requestedAmount,
+        tenureMonths: initialTenure || prev.tenureMonths,
+        employmentType: initialLoanType === 'ippis' ? 'civil_servant' : (prev.employmentType || 'private_sector'),
+      }));
+    }
+  }, [isOpen, initialLoanType, initialAmount, initialTenure]);
 
   // Lock background body scroll when modal is open
   React.useEffect(() => {
@@ -92,6 +125,25 @@ export const LoanApplicationModal: React.FC<LoanApplicationModalProps> = ({
       };
     }
   }, [isOpen]);
+
+  // Resolve selected loan product and its dynamic required documents
+  const selectedProduct = loanProducts.find(
+    (p) => p.category === formData.loanType || p.id === formData.loanType || p.id === `${formData.loanType}-loan`
+  );
+
+  const selectedProductName = selectedProduct?.name || (
+    formData.loanType === 'ippis' ? 'IPPIS Civil Service Loan' :
+    formData.loanType === 'collateral' ? 'Collateral-Backed Loan' :
+    formData.loanType === 'business' ? 'SME & Business Loan' :
+    formData.loanType === 'personal' ? 'Personal Emergency Loan' :
+    'Selected Loan Facility'
+  );
+
+  const requiredDocumentsList = (selectedProduct?.requiredDocuments && selectedProduct.requiredDocuments.length > 0)
+    ? selectedProduct.requiredDocuments
+    : (selectedProduct?.requirements && selectedProduct.requirements.length > 0)
+      ? selectedProduct.requirements
+      : [];
 
   if (!isOpen) return null;
 
@@ -541,20 +593,46 @@ export const LoanApplicationModal: React.FC<LoanApplicationModalProps> = ({
               )}
 
               {/* KYC / Supporting Documents Field */}
-              <div className="p-4 rounded-2xl bg-zinc-50 border border-zinc-200 space-y-3">
+              <div className="p-4 rounded-2xl bg-zinc-50 border border-zinc-200 space-y-3.5">
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-black">
                       KYC / Supporting Documents
                     </label>
-                    <p className="text-xs text-zinc-500 mt-0.5 font-medium">
-                      Upload up to 4 documents to support your application.
-                    </p>
+                    <h4 className="text-sm font-black text-black font-heading mt-0.5">
+                      Required Documents for {selectedProductName}
+                    </h4>
                   </div>
                   <span className="text-[11px] font-bold text-zinc-600 bg-white border border-zinc-200 px-2.5 py-0.5 rounded-full shrink-0">
                     {selectedDocuments.length} of 4 files uploaded
                   </span>
                 </div>
+
+                {/* Dynamic Product-Specific Document Requirements Checklist */}
+                {requiredDocumentsList.length > 0 ? (
+                  <div className="p-3.5 rounded-xl bg-white border border-zinc-200/80 shadow-2xs space-y-2.5">
+                    <p className="text-xs text-zinc-600 font-medium">
+                      Please upload the following documents to support your application:
+                    </p>
+                    <ol className="space-y-1.5">
+                      {requiredDocumentsList.map((docReq, idx) => (
+                        <li key={idx} className="flex items-start gap-2 text-xs text-zinc-800">
+                          <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-yellow-400 text-black font-black text-[10px] shrink-0 mt-0.5">
+                            {idx + 1}
+                          </span>
+                          <span className="font-semibold leading-snug">{docReq}</span>
+                        </li>
+                      ))}
+                    </ol>
+                    <p className="text-[11px] text-zinc-500 pt-1.5 border-t border-zinc-100 font-medium">
+                      Upload up to 4 supporting files in total (PDF, JPG, PNG, WEBP — Max 10 MB per file).
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-xs text-zinc-500 font-medium">
+                    Please upload up to 4 documents that support your application.
+                  </p>
+                )}
 
                 {/* File input / Choose files trigger */}
                 {selectedDocuments.length < 4 ? (

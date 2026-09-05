@@ -116,6 +116,12 @@ export const LOAN_PRODUCTS: LoanProduct[] = [
       'Duly completed SilverKuun loan application form',
       'Letter of Introduction from employer/MDA where required'
     ],
+    requiredDocuments: [
+      'Active IPPIS Number & recent payslips (last 3 months)',
+      'Valid Federal MDA Staff ID Card & National ID (NIN/Voters/Passport)',
+      'Duly completed SilverKuun loan application form',
+      'Letter of Introduction from employer/MDA where required'
+    ],
     ctaText: 'Apply for IPPIS Loan'
   },
   {
@@ -137,6 +143,12 @@ export const LOAN_PRODUCTS: LoanProduct[] = [
       'Clear, legal documentation without hidden charges'
     ],
     requirements: [
+      'Proof of asset ownership (Original Title Document / Vehicle Registration / Proof of Purchase)',
+      'Valid government-issued identification (NIN, Drivers License, or International Passport)',
+      'Proof of regular income or active business operations',
+      'Physical inspection and valuation consent'
+    ],
+    requiredDocuments: [
       'Proof of asset ownership (Original Title Document / Vehicle Registration / Proof of Purchase)',
       'Valid government-issued identification (NIN, Drivers License, or International Passport)',
       'Proof of regular income or active business operations',
@@ -167,6 +179,12 @@ export const LOAN_PRODUCTS: LoanProduct[] = [
       'Valid Director/Owner ID and BVN confirmation',
       'Brief description of business operations and loan utility'
     ],
+    requiredDocuments: [
+      'CAC Business Registration documents (Certificate & Status Report)',
+      '6 months active corporate bank statements',
+      'Valid Director/Owner ID and BVN confirmation',
+      'Brief description of business operations and loan utility'
+    ],
     ctaText: 'Apply for Business Loan'
   },
   {
@@ -187,6 +205,12 @@ export const LOAN_PRODUCTS: LoanProduct[] = [
       'Early liquidation without penalty'
     ],
     requirements: [
+      'Proof of regular employment or steady monthly income',
+      '3 months stamped personal bank statements',
+      'Valid national identification (NIN / Voter ID / Passport)',
+      'Utility bill / proof of residential address'
+    ],
+    requiredDocuments: [
       'Proof of regular employment or steady monthly income',
       '3 months stamped personal bank statements',
       'Valid national identification (NIN / Voter ID / Passport)',

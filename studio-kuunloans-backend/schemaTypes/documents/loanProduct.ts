@@ -276,6 +276,14 @@ export const loanProduct = defineType({
       ],
       validation: (Rule) => Rule.min(1).error('At least one requirement is required'),
     }),
+    defineField({
+      name: 'requiredDocuments',
+      title: 'KYC Required Documents (Application Modal)',
+      type: 'array',
+      group: 'eligibility',
+      description: 'Specific KYC and supporting documents the applicant must upload in the application modal for this loan product (e.g. Valid Government-Issued ID, Recent Bank Statement)',
+      of: [defineArrayMember({type: 'string'})],
+    }),
 
     // ─── Group 5: Display & CTA Settings ─────────────────────────────────────
     defineField({

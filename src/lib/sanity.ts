@@ -43,6 +43,7 @@ export const LOAN_PRODUCTS_QUERY = `*[_type == "loanProduct" && isActive == true
     documentType,
     isMandatory
   },
+  requiredDocuments,
   popular,
   calculatorEnabled,
   ctaText,
@@ -78,6 +79,7 @@ export interface SanityLoanProductRaw {
   eligibleApplicantTypes?: string[];
   features?: Array<{ title?: string; shortDescription?: string; icon?: string } | string>;
   requirements?: Array<{ title?: string; description?: string; documentType?: string; isMandatory?: boolean } | string>;
+  requiredDocuments?: string[];
   popular?: boolean;
   calculatorEnabled?: boolean;
   ctaText?: string;
@@ -120,6 +122,11 @@ export function mapSanityLoanProduct(doc: SanityLoanProductRaw): LoanProduct {
         .filter((r: string) => r.trim().length > 0)
     : [];
 
+  // Format requiredDocuments (fallback to requirements if not explicitly set)
+  const requiredDocuments: string[] = Array.isArray(doc.requiredDocuments) && doc.requiredDocuments.length > 0
+    ? doc.requiredDocuments.filter((d: any) => typeof d === 'string' && d.trim().length > 0)
+    : requirements;
+
   // Determine category
   const validCategory: LoanCategory = ['ippis', 'collateral', 'business', 'personal'].includes(
     doc.category as any
@@ -148,6 +155,8 @@ export function mapSanityLoanProduct(doc: SanityLoanProductRaw): LoanProduct {
     features: features.length > 0 ? features : ['Competitive interest rates', 'Fast processing'],
     requirements:
       requirements.length > 0 ? requirements : ['Valid Government ID', 'Recent Bank Statements'],
+    requiredDocuments:
+      requiredDocuments.length > 0 ? requiredDocuments : (requirements.length > 0 ? requirements : ['Valid Government ID', 'Recent Bank Statements']),
     ctaText: doc.ctaText || 'Apply for Loan',
     popular: Boolean(doc.popular),
   };

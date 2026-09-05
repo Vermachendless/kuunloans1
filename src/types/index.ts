@@ -12,6 +12,7 @@ export interface LoanProduct {
   targetAudience: string;
   features: string[];
   requirements: string[];
+  requiredDocuments?: string[];
   ctaText: string;
   popular?: boolean;
 }
