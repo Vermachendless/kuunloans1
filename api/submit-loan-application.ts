@@ -19,6 +19,58 @@ const SANITY_PROJECT_ID = process.env.SANITY_PROJECT_ID || 'd1cwze7g';
 const SANITY_DATASET = process.env.SANITY_DATASET || 'production';
 const SANITY_API_VERSION = process.env.SANITY_API_VERSION || '2024-01-01';
 
+const TRUSTED_PRODUCT_REQUIREMENTS: Record<string, string[]> = {
+  ippis: [
+    'Active IPPIS Number & recent payslips (last 3 months)',
+    'Valid Federal MDA Staff ID Card & National ID (NIN/Voters/Passport)',
+    'Duly completed SilverKuun loan application form',
+    'Letter of Introduction from employer/MDA where required'
+  ],
+  collateral: [
+    'Proof of asset ownership (Original Title Document / Vehicle Registration / Proof of Purchase)',
+    'Valid government-issued identification (NIN, Drivers License, or International Passport)',
+    'Proof of regular income or active business operations',
+    'Physical inspection and valuation consent'
+  ],
+  business: [
+    'CAC Business Registration documents (Certificate & Status Report)',
+    '6 months active corporate bank statements',
+    'Valid Director/Owner ID and BVN confirmation',
+    'Brief description of business operations and loan utility'
+  ],
+  personal: [
+    'Proof of regular employment or steady monthly income',
+    '3 months stamped personal bank statements',
+    'Valid national identification (NIN / Voter ID / Passport)',
+    'Utility bill / proof of residential address'
+  ]
+};
+
+async function getTrustedRequiredDocuments(loanType: string, token: string): Promise<string[]> {
+  const normType = String(loanType || '').toLowerCase().trim().replace(/-loan$/, '');
+  try {
+    const query = `*[_type == "loanProduct" && (category == "${normType}" || slug.current == "${loanType}" || _id == "${loanType}")][0]{ requiredDocuments, requirements }`;
+    const url = `https://${SANITY_PROJECT_ID}.api.sanity.io/v${SANITY_API_VERSION}/data/query/${SANITY_DATASET}?query=${encodeURIComponent(query)}`;
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (res.ok) {
+      const json = await res.json();
+      if (json.result) {
+        if (Array.isArray(json.result.requiredDocuments) && json.result.requiredDocuments.length > 0) {
+          return json.result.requiredDocuments.filter((d: any) => typeof d === 'string' && d.trim().length > 0);
+        }
+        if (Array.isArray(json.result.requirements) && json.result.requirements.length > 0) {
+          return json.result.requirements.map((r: any) => (typeof r === 'string' ? r : r?.title || '')).filter(Boolean);
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[Submit API] Failed to fetch product requirements from Sanity, using fallback:', err);
+  }
+  return TRUSTED_PRODUCT_REQUIREMENTS[normType] || [];
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -74,6 +126,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Validate required fields
     if (!fullName || !phone || !loanType || requestedAmount === undefined || requestedAmount === null) {
       return res.status(400).json({
+        success: false,
         error: 'Missing required application fields (Full Name, Phone, Loan Type, or Amount).',
       });
     }
@@ -82,11 +135,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!token) {
       console.error('[Sanity API] SANITY_API_WRITE_TOKEN is not defined in server environment.');
       return res.status(500).json({
+        success: false,
         error: 'Server configuration error: Sanity write token is missing.',
       });
     }
 
-    // Process & upload KYC documents if provided
+    // Server-side validation of mandatory KYC documents
+    const requiredDocs = await getTrustedRequiredDocuments(loanType, token);
+    const requiredCount = requiredDocs.length;
+    const uploadedDocs = Array.isArray(kycDocuments) ? kycDocuments : [];
+
+    if (requiredCount > 0 && uploadedDocs.length < requiredCount) {
+      const missingCount = requiredCount - uploadedDocs.length;
+      const errorMsg = uploadedDocs.length === 0
+        ? `Please upload all ${requiredCount} required documents before submitting your application.`
+        : `Please upload ${missingCount} more required document${missingCount > 1 ? 's' : ''} before submitting your application. (${uploadedDocs.length} of ${requiredCount} uploaded)`;
+      return res.status(400).json({
+        success: false,
+        error: errorMsg,
+      });
+    }
+
+    if (uploadedDocs.length > 4) {
+      return res.status(400).json({
+        success: false,
+        error: 'A maximum of 4 KYC documents is permitted.',
+      });
+    }
+
+    // Process & upload KYC documents
     let kycDocReferences: Array<{
       _key: string;
       _type: 'file';
@@ -96,15 +173,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       };
     }> | undefined = undefined;
 
-    if (kycDocuments !== undefined && kycDocuments !== null) {
-      if (!Array.isArray(kycDocuments)) {
-        return res.status(400).json({ error: 'kycDocuments must be an array.' });
-      }
-
-      if (kycDocuments.length > 4) {
-        return res.status(400).json({ error: 'A maximum of 4 KYC documents is permitted.' });
-      }
-
+    if (uploadedDocs.length > 0) {
       const allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'webp'];
       const allowedMimeTypes = [
         'application/pdf',
@@ -116,10 +185,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       kycDocReferences = [];
 
-      for (let i = 0; i < kycDocuments.length; i++) {
-        const docItem = kycDocuments[i];
+      for (let i = 0; i < uploadedDocs.length; i++) {
+        const docItem = uploadedDocs[i];
         if (!docItem || typeof docItem !== 'object' || !docItem.name || !docItem.base64) {
           return res.status(400).json({
+            success: false,
             error: `Malformed document upload at item ${i + 1}. Missing name or file data.`,
           });
         }

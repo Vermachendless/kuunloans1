@@ -63,6 +63,7 @@ export const LoanApplicationModal: React.FC<LoanApplicationModalProps> = ({
   const [selectedDocuments, setSelectedDocuments] = useState<SelectedKYCDocument[]>([]);
   const [documentError, setDocumentError] = useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const kycSectionRef = React.useRef<HTMLDivElement>(null);
 
   const [formData, setFormData] = useState<ApplicationFormData>({
     loanType: initialLoanType,
@@ -126,6 +127,21 @@ export const LoanApplicationModal: React.FC<LoanApplicationModalProps> = ({
     }
   }, [isOpen]);
 
+  // Handle facility change safely, resetting any uploaded files to prevent cross-facility document pollution
+  const handleFacilityChange = (newLoanType: string) => {
+    if (newLoanType !== formData.loanType) {
+      if (selectedDocuments.length > 0) {
+        setSelectedDocuments([]);
+        setDocumentError(null);
+      }
+      setFormData((prev) => ({
+        ...prev,
+        loanType: newLoanType,
+        employmentType: newLoanType === 'ippis' ? 'civil_servant' : (prev.employmentType === 'civil_servant' ? 'private_sector' : prev.employmentType),
+      }));
+    }
+  };
+
   // Resolve selected loan product and its dynamic required documents
   const selectedProduct = loanProducts.find(
     (p) => p.category === formData.loanType || p.id === formData.loanType || p.id === `${formData.loanType}-loan`
@@ -144,6 +160,11 @@ export const LoanApplicationModal: React.FC<LoanApplicationModalProps> = ({
     : (selectedProduct?.requirements && selectedProduct.requirements.length > 0)
       ? selectedProduct.requirements
       : [];
+
+  const requiredCount = requiredDocumentsList.length;
+  const uploadedCount = selectedDocuments.length;
+  const missingCount = Math.max(0, requiredCount - uploadedCount);
+  const isKycComplete = requiredCount === 0 || uploadedCount >= requiredCount;
 
   if (!isOpen) return null;
 
@@ -220,6 +241,16 @@ export const LoanApplicationModal: React.FC<LoanApplicationModalProps> = ({
       if (!formData.fullName || !formData.phone) return;
       setStep(3);
     } else if (step === 3) {
+      if (!isKycComplete) {
+        const errorMsg = uploadedCount === 0
+          ? `Please upload all ${requiredCount} required documents before submitting your application.`
+          : `Please upload ${missingCount} more required document${missingCount > 1 ? 's' : ''} before submitting your application.`;
+        setSubmissionError(errorMsg);
+        setDocumentError(errorMsg);
+        kycSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+
       if (!formData.agreedToTerms || isSubmitting) return;
       setIsSubmitting(true);
       setSubmissionError(null);
@@ -361,7 +392,7 @@ export const LoanApplicationModal: React.FC<LoanApplicationModalProps> = ({
                   ].map((facility) => (
                     <div
                       key={facility.id}
-                      onClick={() => setFormData({ ...formData, loanType: facility.id })}
+                      onClick={() => handleFacilityChange(facility.id)}
                       className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all ${
                         formData.loanType === facility.id
                           ? 'border-yellow-400 bg-yellow-400/20'
@@ -593,27 +624,39 @@ export const LoanApplicationModal: React.FC<LoanApplicationModalProps> = ({
               )}
 
               {/* KYC / Supporting Documents Field */}
-              <div className="p-4 rounded-2xl bg-zinc-50 border border-zinc-200 space-y-3.5">
+              <div ref={kycSectionRef} className="p-4 rounded-2xl bg-zinc-50 border border-zinc-200 space-y-3.5">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-black">
-                      KYC / Supporting Documents
+                    <label className="block text-xs font-bold uppercase tracking-wider text-black flex items-center gap-1">
+                      <span>Required Documents</span>
+                      <span className="text-red-600 font-black">*</span>
                     </label>
                     <h4 className="text-sm font-black text-black font-heading mt-0.5">
                       Required Documents for {selectedProductName}
                     </h4>
                   </div>
-                  <span className="text-[11px] font-bold text-zinc-600 bg-white border border-zinc-200 px-2.5 py-0.5 rounded-full shrink-0">
-                    {selectedDocuments.length} of 4 files uploaded
+                  <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full shrink-0 border ${
+                    isKycComplete
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      : 'bg-amber-50 text-amber-800 border-amber-200'
+                  }`}>
+                    {uploadedCount} of {requiredCount} required {requiredCount === 1 ? 'document' : 'documents'} uploaded {isKycComplete ? '✓' : ''}
                   </span>
                 </div>
 
                 {/* Dynamic Product-Specific Document Requirements Checklist */}
                 {requiredDocumentsList.length > 0 ? (
                   <div className="p-3.5 rounded-xl bg-white border border-zinc-200/80 shadow-2xs space-y-2.5">
-                    <p className="text-xs text-zinc-600 font-medium">
-                      Please upload the following documents to support your application:
-                    </p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-zinc-700 font-semibold">
+                        Please upload all required documents listed below:
+                      </p>
+                      {!isKycComplete && (
+                        <span className="text-[11px] font-bold text-red-600">
+                          {missingCount} missing
+                        </span>
+                      )}
+                    </div>
                     <ol className="space-y-1.5">
                       {requiredDocumentsList.map((docReq, idx) => (
                         <li key={idx} className="flex items-start gap-2 text-xs text-zinc-800">
@@ -624,9 +667,18 @@ export const LoanApplicationModal: React.FC<LoanApplicationModalProps> = ({
                         </li>
                       ))}
                     </ol>
-                    <p className="text-[11px] text-zinc-500 pt-1.5 border-t border-zinc-100 font-medium">
-                      Upload up to 4 supporting files in total (PDF, JPG, PNG, WEBP — Max 10 MB per file).
-                    </p>
+                    <div className="pt-2 border-t border-zinc-100 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[11px] text-zinc-500 font-medium">
+                      <span>Maximum 4 files (PDF, JPG, PNG, WEBP — Max 10 MB each).</span>
+                      {!isKycComplete ? (
+                        <span className="text-amber-700 font-bold">
+                          Upload {missingCount} more {missingCount === 1 ? 'document' : 'documents'} to proceed.
+                        </span>
+                      ) : (
+                        <span className="text-emerald-700 font-bold flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 inline" /> All requirements satisfied
+                        </span>
+                      )}
+                    </div>
                   </div>
                 ) : (
                   <p className="text-xs text-zinc-500 font-medium">
@@ -825,10 +877,10 @@ export const LoanApplicationModal: React.FC<LoanApplicationModalProps> = ({
             <button
               type="button"
               onClick={handleNext}
-              disabled={(step === 3 && !formData.agreedToTerms) || isSubmitting}
+              disabled={(step === 3 && (!formData.agreedToTerms || !isKycComplete)) || isSubmitting}
               className={`flex items-center gap-2 px-6 py-3 rounded-xl font-black text-sm transition-all shadow-md ${
-                (step === 3 && !formData.agreedToTerms) || isSubmitting
-                  ? 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
+                (step === 3 && (!formData.agreedToTerms || !isKycComplete)) || isSubmitting
+                  ? 'bg-zinc-200 text-zinc-400 cursor-not-allowed border border-zinc-300'
                   : 'bg-yellow-400 hover:bg-yellow-300 text-black border border-yellow-500'
               }`}
             >
@@ -839,7 +891,11 @@ export const LoanApplicationModal: React.FC<LoanApplicationModalProps> = ({
                 </>
               ) : (
                 <>
-                  <span>{step === 3 ? 'Submit Application' : 'Proceed to Next Step'}</span>
+                  <span>
+                    {step === 3
+                      ? (!isKycComplete ? `Upload ${missingCount} More Document${missingCount > 1 ? 's' : ''}` : 'Submit Application')
+                      : 'Proceed to Next Step'}
+                  </span>
                   <ArrowRight className="w-4 h-4 text-black" />
                 </>
               )}

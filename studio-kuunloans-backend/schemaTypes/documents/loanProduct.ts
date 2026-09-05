@@ -281,8 +281,10 @@ export const loanProduct = defineType({
       title: 'KYC Required Documents (Application Modal)',
       type: 'array',
       group: 'eligibility',
-      description: 'Specific KYC and supporting documents the applicant must upload in the application modal for this loan product (e.g. Valid Government-Issued ID, Recent Bank Statement)',
+      description: 'Specific KYC and supporting documents the applicant must upload in the application modal for this loan product (Maximum 4 documents)',
       of: [defineArrayMember({type: 'string'})],
+      validation: (Rule) =>
+        Rule.max(4).error('A maximum of 4 required documents is permitted because the application upload limit is 4 files.'),
     }),
 
     // ─── Group 5: Display & CTA Settings ─────────────────────────────────────
