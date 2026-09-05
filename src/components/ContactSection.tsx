@@ -15,6 +15,12 @@ import {
 import { OFFICE_LOCATIONS, COMPANY_INFO } from '../data/mockData';
 import { submitContactEnquiry } from '../lib/sanity';
 
+const DIRECT_CONTACT_PHONES = [
+  ...COMPANY_INFO.phones,
+  '+234 803 348 4118',
+  '+234 802 538 7396'
+];
+
 export const ContactSection: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
@@ -89,7 +95,7 @@ export const ContactSection: React.FC = () => {
                     <span>Customer Hotlines</span>
                   </div>
                   <div className="space-y-1 mt-1">
-                    {COMPANY_INFO.phones.map((phone, idx) => (
+                    {DIRECT_CONTACT_PHONES.map((phone, idx) => (
                       <a 
                         key={idx} 
                         href={`tel:${phone.replace(/\s+/g, '')}`}
