@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Phone, 
-  Mail, 
-  Menu, 
-  X, 
-  ShieldCheck, 
-  ChevronRight, 
+import {
+  Phone,
+  Mail,
+  Menu,
+  X,
+  ShieldCheck,
+  ChevronRight,
   ChevronDown,
   Calculator,
   ArrowRight,
@@ -28,7 +28,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenApplicationModal, onOpenCa
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isServicesDropdownOpen, setIsServicesDropdownOpen] = useState(false);
   const [isMobileServicesOpen, setIsMobileServicesOpen] = useState(true);
-  
+
   const dropdownRef = useRef<HTMLDivElement>(null);
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -121,11 +121,11 @@ export const Header: React.FC<HeaderProps> = ({ onOpenApplicationModal, onOpenCa
         // Measure real current header height dynamically
         const headerEl = document.querySelector('header');
         const headerHeight = headerEl ? headerEl.getBoundingClientRect().height : 80;
-        
+
         // Compute element's top relative to page
         const elementRect = targetEl.getBoundingClientRect();
         const absoluteElementTop = elementRect.top + window.pageYOffset;
-        
+
         // Offset by header height + 16px extra breathing space
         const targetScrollTop = Math.max(0, absoluteElementTop - headerHeight - 16);
 
@@ -157,15 +157,15 @@ export const Header: React.FC<HeaderProps> = ({ onOpenApplicationModal, onOpenCa
               <span>SilverKuun Cooperative Multipurpose Society</span>
             </span>
             <span className="hidden sm:inline-block text-zinc-700">|</span>
-            <a 
-              href="tel:+2347015292816" 
+            <a
+              href="tel:+2348033484118"
               className="flex items-center gap-1.5 hover:text-yellow-400 transition-colors"
             >
               <Phone className="w-3 h-3 text-yellow-400" />
-              <span>+234 701 529 2816</span>
+              <span>+234 803 348 4118</span>
             </a>
-            <a 
-              href="mailto:info@silverkuunloans.com" 
+            <a
+              href="mailto:info@silverkuunloans.com"
               className="hidden lg:flex items-center gap-1.5 hover:text-yellow-400 transition-colors"
             >
               <Mail className="w-3 h-3 text-yellow-400" />
@@ -186,16 +186,15 @@ export const Header: React.FC<HeaderProps> = ({ onOpenApplicationModal, onOpenCa
       </div>
 
       {/* Main Navigation Bar */}
-      <nav className={`w-full transition-all duration-300 ${
-        isScrolled 
-          ? 'bg-white/95 backdrop-blur-md shadow-md py-3 border-b border-zinc-200' 
-          : 'bg-white py-4 sm:py-5 border-b border-zinc-200/80 shadow-xs'
-      }`}>
+      <nav className={`w-full transition-all duration-300 ${isScrolled
+        ? 'bg-white/95 backdrop-blur-md shadow-md py-3 border-b border-zinc-200'
+        : 'bg-white py-4 sm:py-5 border-b border-zinc-200/80 shadow-xs'
+        }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             {/* Brand Logo */}
-            <a 
-              href="#home" 
+            <a
+              href="#home"
               onClick={(e) => handleNavClick(e, '#home')}
               className="flex items-center gap-3 group"
             >
@@ -235,7 +234,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenApplicationModal, onOpenCa
               </a>
 
               {/* Services with Sub-Menu Dropdown */}
-              <div 
+              <div
                 ref={dropdownRef}
                 className="relative"
                 onMouseEnter={handleMouseEnter}
@@ -244,11 +243,10 @@ export const Header: React.FC<HeaderProps> = ({ onOpenApplicationModal, onOpenCa
                 <button
                   type="button"
                   onClick={() => setIsServicesDropdownOpen(!isServicesDropdownOpen)}
-                  className={`flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-lg transition-all duration-150 ${
-                    isServicesDropdownOpen 
-                      ? 'text-black bg-yellow-400/30' 
-                      : 'text-zinc-800 hover:text-black hover:bg-yellow-400/20'
-                  }`}
+                  className={`flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-lg transition-all duration-150 ${isServicesDropdownOpen
+                    ? 'text-black bg-yellow-400/30'
+                    : 'text-zinc-800 hover:text-black hover:bg-yellow-400/20'
+                    }`}
                   aria-expanded={isServicesDropdownOpen}
                 >
                   <span>Services</span>
