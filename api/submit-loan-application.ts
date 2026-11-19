@@ -46,10 +46,19 @@ const TRUSTED_PRODUCT_REQUIREMENTS: Record<string, string[]> = {
   ]
 };
 
+function normalizeLoanCategory(loanType: string): string {
+  const clean = String(loanType || '').toLowerCase().trim().replace(/-loan$/, '');
+  if (clean.includes('ippis') || clean.includes('civil')) return 'ippis';
+  if (clean.includes('collateral')) return 'collateral';
+  if (clean.includes('business') || clean.includes('sme')) return 'business';
+  if (clean.includes('personal') || clean.includes('emergency')) return 'personal';
+  return clean;
+}
+
 async function getTrustedRequiredDocuments(loanType: string, token: string): Promise<string[]> {
-  const normType = String(loanType || '').toLowerCase().trim().replace(/-loan$/, '');
+  const normType = normalizeLoanCategory(loanType);
   try {
-    const query = `*[_type == "loanProduct" && (category == "${normType}" || slug.current == "${loanType}" || _id == "${loanType}")][0]{ requiredDocuments, requirements }`;
+    const query = `*[_type == "loanProduct" && (category == "${normType}" || slug.current == "${loanType}" || _id == "${loanType}" || _id == "loanProduct-${normType}")][0]{ requiredDocuments, requirements }`;
     const url = `https://${SANITY_PROJECT_ID}.api.sanity.io/v${SANITY_API_VERSION}/data/query/${SANITY_DATASET}?query=${encodeURIComponent(query)}`;
     const res = await fetch(url, {
       headers: { Authorization: `Bearer ${token}` }
@@ -58,10 +67,12 @@ async function getTrustedRequiredDocuments(loanType: string, token: string): Pro
       const json = await res.json();
       if (json.result) {
         if (Array.isArray(json.result.requiredDocuments) && json.result.requiredDocuments.length > 0) {
-          return json.result.requiredDocuments.filter((d: any) => typeof d === 'string' && d.trim().length > 0);
+          const docs = json.result.requiredDocuments.filter((d: any) => typeof d === 'string' && d.trim().length > 0);
+          if (docs.length > 0) return docs;
         }
         if (Array.isArray(json.result.requirements) && json.result.requirements.length > 0) {
-          return json.result.requirements.map((r: any) => (typeof r === 'string' ? r : r?.title || '')).filter(Boolean);
+          const docs = json.result.requirements.map((r: any) => (typeof r === 'string' ? r : r?.title || '')).filter(Boolean);
+          if (docs.length > 0) return docs;
         }
       }
     }
@@ -141,18 +152,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Server-side validation of mandatory KYC documents
-    const requiredDocs = await getTrustedRequiredDocuments(loanType, token);
-    const requiredCount = requiredDocs.length;
     const uploadedDocs = Array.isArray(kycDocuments) ? kycDocuments : [];
-
-    if (requiredCount > 0 && uploadedDocs.length < requiredCount) {
-      const missingCount = requiredCount - uploadedDocs.length;
-      const errorMsg = uploadedDocs.length === 0
-        ? `Please upload all ${requiredCount} required documents before submitting your application.`
-        : `Please upload ${missingCount} more required document${missingCount > 1 ? 's' : ''} before submitting your application. (${uploadedDocs.length} of ${requiredCount} uploaded)`;
+    if (uploadedDocs.length === 0) {
       return res.status(400).json({
         success: false,
-        error: errorMsg,
+        error: 'Supporting KYC documents are mandatory. Please upload all required documents before submitting.',
+      });
+    }
+
+    const requiredDocs = await getTrustedRequiredDocuments(loanType, token);
+    const requiredCount = requiredDocs.length;
+
+    // Fail safely if requirements cannot be reliably established
+    if (requiredCount === 0) {
+      console.error(`[Sanity API] Unable to establish required KYC documents for loanType: "${loanType}"`);
+      return res.status(500).json({
+        success: false,
+        error: 'Unable to establish mandatory KYC document requirements for the selected loan product. Please verify your loan selection or contact support.',
+      });
+    }
+
+    if (uploadedDocs.length < requiredCount) {
+      const missingCount = requiredCount - uploadedDocs.length;
+      return res.status(400).json({
+        success: false,
+        error: `Please upload ${missingCount} more required document${missingCount > 1 ? 's' : ''} before submitting your application. (${uploadedDocs.length} of ${requiredCount} uploaded)`,
       });
     }
 
@@ -183,7 +207,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ];
       const maxFileBytes = 10 * 1024 * 1024; // 10 MB per file limit
 
-      kycDocReferences = [];
+      // Pre-validate all documents before commencing uploads
+      const preparedFiles: Array<{
+        filename: string;
+        contentType: string;
+        fileBuffer: Buffer;
+        index: number;
+      }> = [];
 
       for (let i = 0; i < uploadedDocs.length; i++) {
         const docItem = uploadedDocs[i];
@@ -200,12 +230,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         if (!allowedExtensions.includes(ext)) {
           return res.status(400).json({
+            success: false,
             error: `File "${filename}" has an unsupported format. Allowed formats: PDF, JPG, PNG, WEBP.`,
           });
         }
 
         if (mimeType && !allowedMimeTypes.includes(mimeType)) {
           return res.status(400).json({
+            success: false,
             error: `File "${filename}" has an unsupported MIME type (${mimeType}). Allowed types: PDF, JPG, PNG, WEBP.`,
           });
         }
@@ -216,73 +248,95 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           fileBuffer = Buffer.from(base64Data, 'base64');
         } catch (e) {
           return res.status(400).json({
+            success: false,
             error: `Failed to decode file content for "${filename}".`,
           });
         }
 
         if (fileBuffer.length === 0) {
           return res.status(400).json({
+            success: false,
             error: `File "${filename}" is empty.`,
           });
         }
 
         if ((docItem.size && Number(docItem.size) > maxFileBytes) || fileBuffer.length > maxFileBytes) {
           return res.status(400).json({
+            success: false,
             error: `File "${filename}" exceeds the maximum 10 MB limit.`,
           });
         }
 
-        // Upload file asset to Sanity
         const safeFilename = encodeURIComponent(filename.replace(/[^a-zA-Z0-9._-]/g, '_'));
         const contentType = mimeType || (ext === 'pdf' ? 'application/pdf' : `image/${ext === 'jpg' ? 'jpeg' : ext}`);
-        const assetUploadEndpoint = `https://${SANITY_PROJECT_ID}.api.sanity.io/v${SANITY_API_VERSION}/assets/files/${SANITY_DATASET}?filename=${safeFilename}`;
 
-        const assetRes = await fetch(assetUploadEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': contentType,
-            Authorization: `Bearer ${token}`,
-          },
-          body: fileBuffer as unknown as BodyInit,
+        preparedFiles.push({
+          filename: safeFilename,
+          contentType,
+          fileBuffer,
+          index: i,
         });
+      }
 
-        const assetResult = await assetRes.json();
-        if (!assetRes.ok || !assetResult.document?._id) {
-          console.error('[Sanity API] Asset upload error:', assetResult);
-          return res.status(assetRes.status || 500).json({
-            error: assetResult.message || `Failed to upload KYC document "${filename}" to Sanity.`,
-          });
-        }
+      // Concurrently upload assets to Sanity to prevent serverless function timeouts
+      try {
+        kycDocReferences = await Promise.all(
+          preparedFiles.map(async (fileItem) => {
+            const assetUploadEndpoint = `https://${SANITY_PROJECT_ID}.api.sanity.io/v${SANITY_API_VERSION}/assets/files/${SANITY_DATASET}?filename=${fileItem.filename}`;
+            const assetRes = await fetch(assetUploadEndpoint, {
+              method: 'POST',
+              headers: {
+                'Content-Type': fileItem.contentType,
+                Authorization: `Bearer ${token}`,
+              },
+              body: fileItem.fileBuffer as unknown as BodyInit,
+            });
 
-        kycDocReferences.push({
-          _key: `kyc_${Date.now()}_${i}_${Math.random().toString(36).substring(2, 8)}`,
-          _type: 'file',
-          asset: {
-            _type: 'reference',
-            _ref: assetResult.document._id,
-          },
+            const assetResult = await assetRes.json();
+            if (!assetRes.ok || !assetResult.document?._id) {
+              console.error('[Sanity API] Asset upload error:', assetResult);
+              throw new Error(assetResult.message || `Failed to upload KYC document to Sanity.`);
+            }
+
+            return {
+              _key: `kyc_${Date.now()}_${fileItem.index}_${Math.random().toString(36).substring(2, 8)}`,
+              _type: 'file' as const,
+              asset: {
+                _type: 'reference' as const,
+                _ref: assetResult.document._id,
+              },
+            };
+          })
+        );
+      } catch (uploadErr: any) {
+        return res.status(500).json({
+          success: false,
+          error: uploadErr.message || 'Failed to upload supporting KYC documents to server storage.',
         });
       }
     }
 
+    const normLoanType = String(loanType || 'ippis').toLowerCase().trim().replace(/-loan$/, '');
+    const appRef = String(applicationReference || `SKL-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`).trim();
+    const docId = `loanApp-${appRef}`;
+
     const doc: any = {
+      _id: docId,
       _type: 'loanApplication',
-      applicationReference:
-        applicationReference ||
-        `SKL-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`,
+      applicationReference: appRef,
       status: 'new',
       submittedAt: submittedAt || new Date().toISOString(),
       source: 'website',
       loanProduct: {
         _type: 'reference',
-        _ref: `loanProduct-${loanType}`,
+        _ref: `loanProduct-${normLoanType}`,
       },
       fullName: String(fullName).trim(),
       phone: String(phone).trim(),
       email: email ? String(email).trim() : undefined,
       state: state || 'FCT Abuja',
       city: city ? String(city).trim() : undefined,
-      loanType: loanType || 'ippis',
+      loanType: normLoanType,
       requestedAmount: Number(requestedAmount) || 0,
       tenureMonths: Number(tenureMonths) || 12,
       purpose: purpose ? String(purpose).trim() : undefined,
@@ -310,7 +364,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
-        mutations: [{ create: doc }],
+        mutations: [{ createIfNotExists: doc }],
       }),
     });
 
@@ -319,6 +373,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!sanityRes.ok) {
       console.error('[Sanity API] Mutation rejected by Sanity:', result);
       return res.status(sanityRes.status).json({
+        success: false,
         error: result.message || 'Failed to record loan application in Sanity.',
       });
     }
@@ -332,6 +387,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } catch (error: any) {
     console.error('[Sanity API] Unexpected server exception:', error);
     return res.status(500).json({
+      success: false,
       error: error.message || 'Internal server error while processing loan application.',
     });
   }
