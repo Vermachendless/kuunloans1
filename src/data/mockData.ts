@@ -12,6 +12,7 @@ export const COMPANY_INFO = {
   ippisMaxLimit: '₦5,000,000',
   phones: [
     '+234 701 529 2816',
+    '+234 707 000 1268',
     '+234 803 794 2635'
   ],
   emails: [

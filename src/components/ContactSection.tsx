@@ -15,11 +15,7 @@ import {
 import { OFFICE_LOCATIONS, COMPANY_INFO } from '../data/mockData';
 import { submitContactEnquiry } from '../lib/sanity';
 
-const DIRECT_CONTACT_PHONES = [
-  ...COMPANY_INFO.phones,
-  '+234 803 348 4118',
-  '+234 802 538 7396'
-];
+const DIRECT_CONTACT_PHONES = COMPANY_INFO.phones;
 
 export const ContactSection: React.FC = () => {
   const [formData, setFormData] = useState({
