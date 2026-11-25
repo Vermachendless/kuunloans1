@@ -33,10 +33,76 @@ const getFileDisplayType = (file: File): string => {
   return ext ? `${ext} File` : 'Document';
 };
 
-const fileToBase64 = (file: File): Promise<string> => {
+const processFileForUpload = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
+    const isImage = file.type.startsWith('image/') || /\.(jpg|jpeg|png|webp)$/i.test(file.name);
+
+    // Non-images (e.g. PDFs) read directly as data URL
+    if (!isImage || typeof window === 'undefined' || !window.document) {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+      reader.readAsDataURL(file);
+      return;
+    }
+
+    // Process images to optimize large phone camera photos (e.g. IMG_7510.jpeg)
     const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      if (!dataUrl) {
+        resolve('');
+        return;
+      }
+
+      // If already under 800 KB, no downscaling needed
+      if (file.size <= 800 * 1024) {
+        resolve(dataUrl);
+        return;
+      }
+
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const maxDim = 1920;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve(dataUrl);
+            return;
+          }
+
+          const isPng = file.type === 'image/png' || /\.png$/i.test(file.name);
+          const outputType = isPng ? 'image/png' : 'image/jpeg';
+          if (!isPng) {
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, width, height);
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL(outputType, 0.88);
+          resolve(compressedDataUrl);
+        } catch {
+          resolve(dataUrl);
+        }
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    };
     reader.onerror = (error) => reject(error);
     reader.readAsDataURL(file);
   });
@@ -83,6 +149,7 @@ export const LoanApplicationModal: React.FC<LoanApplicationModalProps> = ({
   });
 
   const [applicationRef, setApplicationRef] = useState<string>('');
+  const persistedAppRef = React.useRef<string>('');
   const [loanProducts, setLoanProducts] = useState<LoanProduct[]>(LOAN_PRODUCTS);
 
   // Fetch active loan products from Sanity with fallback to mock data
@@ -255,16 +322,19 @@ export const LoanApplicationModal: React.FC<LoanApplicationModalProps> = ({
       setIsSubmitting(true);
       setSubmissionError(null);
 
-      // Generate unique tracking reference
-      const randomNum = Math.floor(100000 + Math.random() * 900000);
-      const ref = `SKL-${new Date().getFullYear()}-${randomNum}`;
+      // Generate unique tracking reference or reuse existing reference across retries
+      if (!persistedAppRef.current) {
+        const randomNum = Math.floor(100000 + Math.random() * 900000);
+        persistedAppRef.current = `SKL-${new Date().getFullYear()}-${randomNum}`;
+      }
+      const ref = persistedAppRef.current;
 
       try {
         let kycDocsPayload: any[] | undefined = undefined;
         if (selectedDocuments.length > 0) {
           kycDocsPayload = await Promise.all(
             selectedDocuments.map(async (doc) => {
-              const base64 = await fileToBase64(doc.file);
+              const base64 = await processFileForUpload(doc.file);
               return {
                 name: doc.name,
                 type: doc.file.type || (doc.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg'),
@@ -273,6 +343,13 @@ export const LoanApplicationModal: React.FC<LoanApplicationModalProps> = ({
               };
             })
           );
+        }
+
+        // Validate total base64 payload size to prevent Vercel 4.5 MB request body limit rejection
+        const totalPayloadBytes = JSON.stringify(kycDocsPayload || []).length;
+        if (totalPayloadBytes > 4 * 1024 * 1024) {
+          setSubmissionError('The combined size of the uploaded documents is too large for transmission. Please upload smaller or compressed PDF files and try again.');
+          return;
         }
 
         const result = await submitLoanApplication({
@@ -305,6 +382,7 @@ export const LoanApplicationModal: React.FC<LoanApplicationModalProps> = ({
   };
 
   const resetAndClose = () => {
+    persistedAppRef.current = '';
     setStep(1);
     setApplicationRef('');
     setSubmissionError(null);

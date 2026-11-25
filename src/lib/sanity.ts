@@ -225,11 +225,43 @@ export async function submitLoanApplication(
       body: JSON.stringify(data),
     });
 
-    const result = await res.json();
+    const contentType = res.headers.get('content-type') || '';
+    let result: any = null;
+
+    if (contentType.includes('application/json')) {
+      try {
+        result = await res.json();
+      } catch {
+        // Handled below if result remains null
+      }
+    }
+
+    if (!result) {
+      const rawText = await res.text().catch(() => '');
+      if (res.status === 413) {
+        return {
+          success: false,
+          error: 'Uploaded documents exceed the server request payload limit. Please upload smaller files or compress them before submitting.',
+        };
+      }
+      if (res.status === 504 || res.status === 502) {
+        return {
+          success: false,
+          error: 'The request timed out while uploading your documents. Please verify your connection and try again.',
+        };
+      }
+      return {
+        success: false,
+        error: rawText && rawText.length < 200 && !rawText.includes('<html')
+          ? rawText
+          : `Server returned error (${res.status}). Please try again or contact support.`,
+      };
+    }
+
     if (!res.ok || !result.success) {
       return {
         success: false,
-        error: result.error || `Server responded with status ${res.status}`,
+        error: result.error || result.message || `Server responded with status ${res.status}`,
       };
     }
 
@@ -273,11 +305,31 @@ export async function submitContactEnquiry(
       body: JSON.stringify(data),
     });
 
-    const result = await res.json();
+    const contentType = res.headers.get('content-type') || '';
+    let result: any = null;
+
+    if (contentType.includes('application/json')) {
+      try {
+        result = await res.json();
+      } catch {
+        // Handled below if result remains null
+      }
+    }
+
+    if (!result) {
+      const rawText = await res.text().catch(() => '');
+      return {
+        success: false,
+        error: rawText && rawText.length < 200 && !rawText.includes('<html')
+          ? rawText
+          : `Server error (${res.status}). Please try again later.`,
+      };
+    }
+
     if (!res.ok || !result.success) {
       return {
         success: false,
-        error: result.error || `Server responded with status ${res.status}`,
+        error: result.error || result.message || `Server responded with status ${res.status}`,
       };
     }
 
